@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tài khoản — Anna Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: "#1C3A57",
+          subtle: "#5F7D95",
+          canvas: "#EAF6FF",
+          line: "#D9ECF8",
+          brand: { DEFAULT: "#4FA9E0", dark: "#2F7FBD", light: "#EAF3FD" },
+        },
+        fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"], display: ["Quicksand", "ui-sans-serif", "system-ui"] },
+      },
+    },
+  };
+</script>
+<link rel="stylesheet" href="/static/css/custom.css" />
+</head>
+<body class="bg-canvas font-sans text-ink min-h-screen flex items-center justify-center px-4 py-8"
+      style="background-image: radial-gradient(1100px 600px at 85% -10%, #cdeaff 0%, transparent 60%), radial-gradient(900px 500px at -10% 110%, #cdeaff 0%, transparent 55%);">
+
+  <!-- ---- Toast: đăng ký thành công (nền trắng, chữ xanh) ---- -->
+  <div id="register-success-toast"
+       class="fixed top-6 left-1/2 -translate-x-1/2 z-50 opacity-0 pointer-events-none transition-all duration-300 -translate-y-2
+              bg-white border border-brand/30 shadow-[0_18px_40px_-16px_rgba(47,127,189,0.45)] rounded-2xl px-5 py-3.5 flex items-center gap-2.5">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#2f7fbd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 shrink-0">
+      <path d="M20 6 9 17l-5-5"/>
+    </svg>
+    <span class="text-brand-dark font-bold text-sm">Đăng ký thành công</span>
+  </div>
+
+  <div class="fixed top-7 left-8 flex items-center gap-2.5">
+    <span class="w-[34px] h-[34px] rounded-xl flex items-center justify-center shrink-0 shadow-[0_6px_14px_rgba(47,127,189,0.35)]" style="background: linear-gradient(145deg, #7ec4ec, #2f7fbd);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-[18px] h-[18px]"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    </span>
+    <span class="font-display font-bold text-lg text-ink">Anna Store</span>
+  </div>
+
+  <div class="w-full max-w-sm">
+    <div class="bg-white rounded-[28px] px-9 pt-11 pb-8 shadow-[0_30px_60px_-20px_rgba(47,127,189,0.28),0_8px_20px_-6px_rgba(28,58,87,0.08)] border border-white/60">
+
+      <div class="w-16 h-16 mx-auto mb-5 rounded-full flex items-center justify-center" style="background: linear-gradient(160deg, #cdeaff, #7ec4ec);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2f7fbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+
+      <h1 id="form-title" class="font-display font-bold text-[25px] text-center mb-1.5">Chào mừng trở lại</h1>
+      <p id="form-subtitle" class="text-center text-subtle text-sm mb-7">Đăng nhập để tiếp tục mua sắm tại Anna Store</p>
+
+      <!-- ====================== FORM ĐĂNG NHẬP ====================== -->
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-[12.5px] font-semibold mb-1.5" for="login-email">Email</label>
+          <input id="login-email" type="email" required placeholder="ban@email.com"
+            class="w-full rounded-2xl border-[1.5px] border-line bg-[#f7fbfe] px-4 py-3 text-sm outline-none focus:border-brand focus:bg-white transition-colors" />
+        </div>
+        <div>
+          <label class="block text-[12.5px] font-semibold mb-1.5" for="login-password">Mật khẩu</label>
+          <div class="relative">
+            <input id="login-password" type="password" required placeholder="Nhập mật khẩu"
+              class="w-full rounded-2xl border-[1.5px] border-line bg-[#f7fbfe] px-4 py-3 pr-11 text-sm outline-none focus:border-brand focus:bg-white transition-colors" />
+            <button type="button" id="toggle-login-pwd" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-subtle" aria-label="Hiện mật khẩu">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-[18px] h-[18px]"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <p id="login-error" class="text-sm text-red-500 hidden"></p>
+
+        <button type="submit" id="login-submit-btn"
+          class="w-full rounded-2xl py-3.5 text-white font-semibold text-[15px] shadow-[0_10px_22px_-8px_rgba(47,127,189,0.55)] hover:-translate-y-px transition-transform"
+          style="background: linear-gradient(135deg, #4fa9e0, #2f7fbd);">
+          Đăng nhập
+        </button>
+      </form>
+
+      <!-- ====================== FORM ĐĂNG KÝ ====================== -->
+      <form id="register-form" class="space-y-4 hidden">
+        <div>
+          <label class="block text-[12.5px] font-semibold mb-1.5" for="register-name">Họ tên</label>
+          <input id="register-name" type="text" required placeholder="Nguyễn Văn A"
+            class="w-full rounded-2xl border-[1.5px] border-line bg-[#f7fbfe] px-4 py-3 text-sm outline-none focus:border-brand focus:bg-white transition-colors" />
+        </div>
+        <div>
+          <label class="block text-[12.5px] font-semibold mb-1.5" for="register-email">Email</label>
+          <input id="register-email" type="email" required placeholder="ban@email.com"
+            class="w-full rounded-2xl border-[1.5px] border-line bg-[#f7fbfe] px-4 py-3 text-sm outline-none focus:border-brand focus:bg-white transition-colors" />
+        </div>
+        <div>
+          <label class="block text-[12.5px] font-semibold mb-1.5" for="register-phone">Số điện thoại (không bắt buộc)</label>
+          <input id="register-phone" type="text" placeholder="09xxxxxxxx"
+            class="w-full rounded-2xl border-[1.5px] border-line bg-[#f7fbfe] px-4 py-3 text-sm outline-none focus:border-brand focus:bg-white transition-colors" />
+        </div>
+        <div>
+          <label class="block text-[12.5px] font-semibold mb-1.5" for="register-password">Mật khẩu</label>
+          <div class="relative">
+            <input id="register-password" type="password" required minlength="6" placeholder="Tối thiểu 6 ký tự"
+              class="w-full rounded-2xl border-[1.5px] border-line bg-[#f7fbfe] px-4 py-3 pr-11 text-sm outline-none focus:border-brand focus:bg-white transition-colors" />
+            <button type="button" id="toggle-register-pwd" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-subtle" aria-label="Hiện mật khẩu">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-[18px] h-[18px]"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <p id="register-error" class="text-sm text-red-500 hidden"></p>
+
+        <button type="submit" id="register-submit-btn"
+          class="w-full rounded-2xl py-3.5 text-white font-semibold text-[15px] shadow-[0_10px_22px_-8px_rgba(47,127,189,0.55)] hover:-translate-y-px transition-transform"
+          style="background: linear-gradient(135deg, #4fa9e0, #2f7fbd);">
+          Tạo tài khoản
+        </button>
+      </form>
+
+      <p class="text-center text-[13.5px] text-subtle mt-6">
+        <span id="signup-prompt">Chưa có tài khoản?
+          <button type="button" id="show-register-btn" class="text-brand-dark font-bold hover:underline">Đăng ký ngay</button>
+        </span>
+        <span id="login-prompt" class="hidden">Đã có tài khoản?
+          <button type="button" id="show-login-btn" class="text-brand-dark font-bold hover:underline">Đăng nhập</button>
+        </span>
+      </p>
+    </div>
+
+    <p class="text-center text-xs text-subtle mt-5">
+      Đăng nhập chỉ để lưu lịch sử hỗ trợ &amp; đơn hàng — bạn vẫn có thể
+      <a href="/chat" class="text-brand-dark font-medium hover:underline">chat hỗ trợ không cần tài khoản</a>.
+    </p>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script>
+    // Token khách hàng lưu riêng key, KHÔNG dùng chung với token nhân viên
+    // (localStorage key "cs_ai_token"/"cs_ai_user" của dashboard nội bộ).
+    const CUSTOMER_TOKEN_KEY = "anna_customer_token";
+    const CUSTOMER_KEY = "anna_customer";
+
+    // Đã đăng nhập rồi thì vào thẳng trang chat (nơi thể hiện đã nhận diện khách).
+    if (localStorage.getItem(CUSTOMER_TOKEN_KEY)) {
+      window.location.href = "/chat";
+    }
+
+    const loginForm = document.getElementById("login-form");
+    const registerForm = document.getElementById("register-form");
+    const formTitle = document.getElementById("form-title");
+    const formSubtitle = document.getElementById("form-subtitle");
+    const signupPrompt = document.getElementById("signup-prompt");
+    const loginPrompt = document.getElementById("login-prompt");
+
+    function showRegister() {
+      loginForm.classList.add("hidden");
+      registerForm.classList.remove("hidden");
+      signupPrompt.classList.add("hidden");
+      loginPrompt.classList.remove("hidden");
+      formTitle.textContent = "Tạo tài khoản mới";
+      formSubtitle.textContent = "Đăng ký để lưu lại lịch sử hỗ trợ & đơn hàng";
+    }
+
+    function showLogin() {
+      registerForm.classList.add("hidden");
+      loginForm.classList.remove("hidden");
+      loginPrompt.classList.add("hidden");
+      signupPrompt.classList.remove("hidden");
+      formTitle.textContent = "Chào mừng trở lại";
+      formSubtitle.textContent = "Đăng nhập để tiếp tục mua sắm tại Anna Store";
+    }
+
+    document.getElementById("show-register-btn").addEventListener("click", showRegister);
+    document.getElementById("show-login-btn").addEventListener("click", showLogin);
+
+    function setupPasswordToggle(toggleId, inputId) {
+      document.getElementById(toggleId).addEventListener("click", () => {
+        const input = document.getElementById(inputId);
+        input.type = input.type === "password" ? "text" : "password";
+      });
+    }
+    setupPasswordToggle("toggle-login-pwd", "login-password");
+    setupPasswordToggle("toggle-register-pwd", "register-password");
+
+    function saveCustomerSession(token, customer) {
+      localStorage.setItem(CUSTOMER_TOKEN_KEY, token);
+      localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer));
+    }
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById("login-error");
+      const btn = document.getElementById("login-submit-btn");
+      errorEl.classList.add("hidden");
+      btn.disabled = true;
+
+      try {
+        const resp = await fetch("/api/v1/customer-auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: document.getElementById("login-email").value.trim(),
+            password: document.getElementById("login-password").value,
+          }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || "Đăng nhập thất bại");
+
+        const meResp = await fetch("/api/v1/customer-auth/me", {
+          headers: { Authorization: `Bearer ${data.access_token}` },
+        });
+        const me = await meResp.json();
+
+        saveCustomerSession(data.access_token, me);
+        window.location.href = "/chat";
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    function showSuccessToast(message) {
+      const toast = document.getElementById("register-success-toast");
+      toast.querySelector("span").textContent = message;
+      toast.classList.remove("opacity-0", "-translate-y-2");
+    }
+
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById("register-error");
+      const btn = document.getElementById("register-submit-btn");
+      errorEl.classList.add("hidden");
+      btn.disabled = true;
+
+      const email = document.getElementById("register-email").value.trim();
+
+      try {
+        const resp = await fetch("/api/v1/customer-auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: document.getElementById("register-name").value.trim(),
+            email,
+            phone: document.getElementById("register-phone").value.trim() || null,
+            password: document.getElementById("register-password").value,
+          }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || "Đăng ký thất bại");
+
+        // KHÔNG tự đăng nhập sau khi đăng ký — bắt khách tự nhập lại email/mật
+        // khẩu ở form đăng nhập, để họ xác nhận đúng thông tin vừa tạo.
+        showSuccessToast("Đăng ký thành công");
+        registerForm.reset();
+        setTimeout(() => {
+          showLogin();
+          document.getElementById("login-email").value = email;
+          document.getElementById("login-password").focus();
+        }, 1200);
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove("hidden");
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

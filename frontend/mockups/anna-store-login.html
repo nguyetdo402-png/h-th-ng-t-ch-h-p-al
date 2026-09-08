@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anna Store — Đăng nhập</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky: #eaf6ff;
+    --sky-mid: #cdeaff;
+    --blue-soft: #7ec4ec;
+    --blue-mid: #4fa9e0;
+    --blue-deep: #2f7fbd;
+    --navy: #1c3a57;
+    --slate: #5f7d95;
+    --white: #ffffff;
+    --line: #d9ecf8;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  body{
+    min-height:100vh;
+    font-family:'Inter', sans-serif;
+    background:
+      radial-gradient(1100px 600px at 85% -10%, var(--sky-mid) 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, var(--sky-mid) 0%, transparent 55%),
+      var(--sky);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 20px;
+    position:relative;
+    overflow-x:hidden;
+  }
+
+  /* Brand mark, top-left */
+  .brand{
+    position:fixed;
+    top:28px;
+    left:32px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    z-index:10;
+  }
+  .brand-mark{
+    width:34px;
+    height:34px;
+    border-radius:10px;
+    background:linear-gradient(145deg, var(--blue-soft), var(--blue-deep));
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 6px 14px rgba(47,127,189,0.35);
+  }
+  .brand-mark svg{ width:18px; height:18px; }
+  .brand-name{
+    font-family:'Quicksand', sans-serif;
+    font-weight:700;
+    font-size:20px;
+    color:var(--navy);
+    letter-spacing:0.2px;
+  }
+
+  /* decorative floating shapes */
+  .blob{
+    position:fixed;
+    border-radius:50%;
+    filter:blur(2px);
+    opacity:0.5;
+    z-index:0;
+  }
+  .blob.one{ width:180px; height:180px; background:var(--blue-soft); top:-60px; right:12%; opacity:0.35;}
+  .blob.two{ width:120px; height:120px; background:var(--blue-mid); bottom:8%; left:8%; opacity:0.25;}
+
+  .card{
+    position:relative;
+    z-index:2;
+    width:100%;
+    max-width:400px;
+    background:var(--white);
+    border-radius:28px;
+    padding:44px 36px 34px;
+    box-shadow:
+      0 30px 60px -20px rgba(47,127,189,0.28),
+      0 8px 20px -6px rgba(28,58,87,0.08);
+    border:1px solid rgba(255,255,255,0.6);
+  }
+
+  .avatar{
+    width:64px;
+    height:64px;
+    margin:0 auto 20px;
+    border-radius:50%;
+    background:linear-gradient(160deg, var(--sky-mid), var(--blue-soft));
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .avatar svg{ width:28px; height:28px; color:var(--blue-deep); }
+
+  h1{
+    font-family:'Quicksand', sans-serif;
+    font-weight:700;
+    font-size:25px;
+    color:var(--navy);
+    text-align:center;
+    margin-bottom:6px;
+  }
+  .subtitle{
+    text-align:center;
+    color:var(--slate);
+    font-size:14px;
+    margin-bottom:28px;
+  }
+
+  .field{
+    position:relative;
+    margin-bottom:16px;
+  }
+  .field label{
+    display:block;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--navy);
+    margin-bottom:6px;
+  }
+  .field .input-wrap{
+    position:relative;
+    display:flex;
+    align-items:center;
+  }
+  .field input{
+    width:100%;
+    padding:13px 44px 13px 42px;
+    border-radius:14px;
+    border:1.5px solid var(--line);
+    background:#f7fbfe;
+    font-size:14px;
+    color:var(--navy);
+    outline:none;
+    transition:border-color .15s ease, background .15s ease;
+    font-family:'Inter', sans-serif;
+  }
+  .field input::placeholder{ color:#a8bfd1; }
+  .field input:focus{
+    border-color:var(--blue-mid);
+    background:var(--white);
+  }
+  .field .icon-left{
+    position:absolute;
+    left:14px;
+    width:17px;
+    height:17px;
+    color:#8fb3cc;
+    pointer-events:none;
+  }
+  .field .icon-right{
+    position:absolute;
+    right:14px;
+    width:18px;
+    height:18px;
+    color:#8fb3cc;
+    cursor:pointer;
+    background:none;
+    border:none;
+    padding:0;
+    display:flex;
+  }
+
+  .row-between{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:4px 0 22px;
+    font-size:13px;
+  }
+  .remember{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--slate);
+    cursor:pointer;
+    user-select:none;
+  }
+  .remember input{
+    width:16px;
+    height:16px;
+    accent-color:var(--blue-mid);
+    cursor:pointer;
+  }
+  .forgot{
+    color:var(--blue-deep);
+    text-decoration:none;
+    font-weight:600;
+  }
+  .forgot:hover{ text-decoration:underline; }
+
+  .btn-primary{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:14px;
+    background:linear-gradient(135deg, var(--blue-mid), var(--blue-deep));
+    color:#fff;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    cursor:pointer;
+    box-shadow:0 10px 22px -8px rgba(47,127,189,0.55);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn-primary:hover{
+    transform:translateY(-1px);
+    box-shadow:0 14px 26px -8px rgba(47,127,189,0.6);
+  }
+  .btn-primary:active{ transform:translateY(0); }
+
+  .divider{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:26px 0 18px;
+    color:#9fb7cb;
+    font-size:12.5px;
+  }
+  .divider::before, .divider::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+
+  .btn-facebook{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    padding:12px;
+    border-radius:14px;
+    border:1.5px solid var(--line);
+    background:#f7fbfe;
+    color:var(--navy);
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .btn-facebook:hover{
+    background:#eef7fd;
+    border-color:var(--blue-soft);
+  }
+  .btn-facebook svg{ width:19px; height:19px; color:#1877F2; }
+
+  .signup{
+    text-align:center;
+    margin-top:24px;
+    font-size:13.5px;
+    color:var(--slate);
+  }
+  .signup a{
+    color:var(--blue-deep);
+    font-weight:700;
+    text-decoration:none;
+  }
+  .signup a:hover{ text-decoration:underline; }
+
+  @media (max-width:420px){
+    .brand{ top:18px; left:18px; }
+    .card{ padding:36px 24px 28px; border-radius:22px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+        <path d="M3 6h18"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+    </div>
+    <span class="brand-name">Anna Store</span>
+  </div>
+
+  <div class="blob one"></div>
+  <div class="blob two"></div>
+
+  <div class="card">
+    <div class="avatar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+
+    <h1>Chào mừng trở lại</h1>
+    <p class="subtitle">Đăng nhập để tiếp tục mua sắm tại Anna Store</p>
+
+    <form id="loginForm">
+      <div class="field">
+        <label for="email">Email</label>
+        <div class="input-wrap">
+          <svg class="icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="m22 6-10 7L2 6"/>
+          </svg>
+          <input type="email" id="email" placeholder="ban@email.com" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="password">Mật khẩu</label>
+        <div class="input-wrap">
+          <svg class="icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input type="password" id="password" placeholder="Nhập mật khẩu" required>
+          <button type="button" class="icon-right" id="togglePwd" aria-label="Hiện mật khẩu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="row-between">
+        <label class="remember">
+          <input type="checkbox">
+          Ghi nhớ đăng nhập
+        </label>
+        <a href="#" class="forgot">Quên mật khẩu?</a>
+      </div>
+
+      <button type="submit" class="btn-primary">Đăng nhập</button>
+    </form>
+
+    <div class="divider">HOẶC</div>
+
+    <button type="button" class="btn-facebook">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.15 8.44 9.94v-7.03H7.9v-2.9h2.54V9.85c0-2.5 1.49-3.89 3.78-3.89 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.44 2.9h-2.34V22c4.78-.79 8.44-4.94 8.44-9.94Z"/>
+      </svg>
+      Tiếp tục với Facebook
+    </button>
+
+    <p class="signup">Chưa có tài khoản? <a href="#">Đăng ký ngay</a></p>
+  </div>
+
+  <script>
+    const toggle = document.getElementById('togglePwd');
+    const pwd = document.getElementById('password');
+    toggle.addEventListener('click', () => {
+      const isPwd = pwd.type === 'password';
+      pwd.type = isPwd ? 'text' : 'password';
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      alert('Đây là giao diện minh hoạ — chưa kết nối chức năng đăng nhập thật.');
+    });
+  </script>
+</body>
+</html>

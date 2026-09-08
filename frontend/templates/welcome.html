@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anna Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Quicksand:wght@600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: "#1C3A57",
+          subtle: "#5F7D95",
+          canvas: "#EAF6FF",
+          line: "#D9ECF8",
+          brand: { DEFAULT: "#4FA9E0", dark: "#2F7FBD", light: "#EAF3FD" },
+        },
+        fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"], display: ["Quicksand", "ui-sans-serif", "system-ui"] },
+      },
+    },
+  };
+</script>
+<link rel="stylesheet" href="/static/css/custom.css" />
+</head>
+<body class="bg-canvas font-sans text-ink min-h-screen flex items-center justify-center px-4 py-10" style="background-image: radial-gradient(900px 500px at 85% -10%, #d3ecfb 0%, transparent 60%), radial-gradient(700px 420px at -10% 110%, #d3ecfb 0%, transparent 55%);">
+
+  <div class="w-full max-w-lg text-center">
+    <div class="mb-8 flex items-center justify-center gap-2.5">
+      <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: linear-gradient(145deg, #7ec4ec, #2f7fbd);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      </span>
+      <span class="font-display font-bold text-2xl text-ink">Anna Store</span>
+    </div>
+
+    <h1 class="font-display font-bold text-xl mb-1">Bạn muốn vào với vai trò nào?</h1>
+    <p class="text-sm text-subtle mb-8">Chọn 1 trong 2 lối bên dưới để tiếp tục.</p>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      <!-- Lối vào cho khách hàng -->
+      <a href="/account" class="group block bg-white border border-line rounded-2xl p-6 text-left shadow-[0_20px_45px_-28px_rgba(47,127,189,0.4)] hover:-translate-y-0.5 hover:shadow-[0_24px_50px_-24px_rgba(47,127,189,0.5)] transition-all">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style="background: linear-gradient(160deg, #d3ecfb, #7ec4ec);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2f7fbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <p class="font-display font-bold text-base mb-1">Tôi là khách hàng</p>
+        <p class="text-xs text-subtle mb-4">Đăng nhập hoặc đăng ký để lưu lịch sử hỗ trợ &amp; đơn hàng.</p>
+        <span class="text-sm font-semibold text-brand-dark group-hover:underline">Đăng nhập / Đăng ký →</span>
+      </a>
+
+      <!-- Lối vào cho nhân viên -->
+      <a href="/login" class="group block bg-white border border-line rounded-2xl p-6 text-left shadow-[0_20px_45px_-28px_rgba(47,127,189,0.4)] hover:-translate-y-0.5 hover:shadow-[0_24px_50px_-24px_rgba(47,127,189,0.5)] transition-all">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style="background: linear-gradient(160deg, #d3ecfb, #7ec4ec);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2f7fbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <p class="font-display font-bold text-base mb-1">Tôi là nhân viên</p>
+        <p class="text-xs text-subtle mb-4">Đăng nhập vào hệ thống quản lý hội thoại &amp; ticket.</p>
+        <span class="text-sm font-semibold text-brand-dark group-hover:underline">Đăng nhập hệ thống →</span>
+      </a>
+    </div>
+
+    <p class="text-xs text-subtle mt-8">
+      Chỉ cần chat nhanh không muốn đăng ký? <a href="/chat" class="text-brand-dark font-medium hover:underline">Chat hỗ trợ ngay</a>.
+    </p>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,34 @@
+# --- Web Framework ---
+fastapi==0.115.4
+uvicorn[standard]==0.32.0
+
+# --- Database (SQLAlchemy ORM, dễ chuyển sang PostgreSQL sau này) ---
+sqlalchemy==2.0.36
+alembic==1.13.3
+# psycopg2-binary==2.9.10   # <-- bỏ comment khi nâng cấp lên PostgreSQL
+
+# --- Data Validation / Settings ---
+pydantic==2.9.2
+pydantic-settings==2.6.1
+email-validator==2.2.0
+
+# --- Auth & Security ---
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1   # ghim cứng: bcrypt>=4.1 phá vỡ tương thích với passlib 1.7.4
+python-multipart==0.0.12
+slowapi==0.1.9   # rate limit cho các endpoint public (chat widget)
+
+# --- AI Integration ---
+openai==1.54.4
+# google-generativeai==0.8.3   # <-- bỏ comment nếu dùng Gemini API thay vì OpenAI
+
+# --- Templating (serve frontend HTML từ FastAPI) ---
+jinja2==3.1.4
+
+# --- Utilities ---
+python-dotenv==1.0.1
+
+# --- Testing ---
+pytest==8.3.3
+httpx==0.27.2
