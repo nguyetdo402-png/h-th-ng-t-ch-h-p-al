@@ -1,0 +1,201 @@
+/* Bổ sung nhỏ ngoài TailwindCSS: reset focus mặc định của trình duyệt để dùng
+   focus ring nhất quán, và làm mượt scrollbar cho danh sách dài. */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #b8d9ee transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #b8d9ee;
+  border-radius: 4px;
+}
+
+/* Hiệu ứng "chìm nổi" (neumorphic) cho thanh điều hướng: các mục có thể bấm
+   nổi lên nhẹ trên nền xanh nhạt, nhãn thông tin (tên user) thì chìm xuống —
+   phân biệt trực quan giữa "bấm được" và "chỉ để xem". */
+.nav-chip {
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: none;
+  background: #eaf6ff;
+  color: #5f7d95;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 4px 4px 9px rgba(47, 127, 189, 0.18), -4px -4px 9px rgba(255, 255, 255, 0.95);
+  transition: box-shadow 0.15s ease, color 0.15s ease, transform 0.05s ease;
+}
+.nav-chip:hover {
+  color: #1c3a57;
+  box-shadow: 5px 5px 11px rgba(47, 127, 189, 0.22), -5px -5px 11px rgba(255, 255, 255, 1);
+}
+.nav-chip:active {
+  color: #2f7fbd;
+  transform: translateY(1px);
+  box-shadow: inset 3px 3px 6px rgba(47, 127, 189, 0.25), inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+}
+
+.user-chip {
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: #eaf6ff;
+  color: #5f7d95;
+  font-size: 13px;
+  box-shadow: inset 3px 3px 6px rgba(47, 127, 189, 0.18), inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+}
+
+.app-header {
+  background: #eaf6ff;
+  box-shadow: 0 6px 18px -14px rgba(47, 127, 189, 0.5);
+}
+@keyframes draft-appear {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.draft-panel {
+  animation: draft-appear 0.2s ease-out;
+}
+
+/* ============ Khung chat khách hàng (chat_widget.html) — theo mockup dashboard ============ */
+
+.cw-shop-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(160deg, #d3ecfb, #7ec4ec);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: #2f7fbd;
+}
+
+.cw-msg-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(160deg, #d3ecfb, #7ec4ec);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 10px;
+  color: #2f7fbd;
+}
+
+.cw-msg-row {
+  display: flex;
+  gap: 8px;
+  max-width: 82%;
+}
+.cw-msg-row.in { align-self: flex-start; }
+.cw-msg-row.out { align-self: flex-end; flex-direction: row-reverse; }
+
+.cw-sender-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #93aec2;
+  margin-bottom: 3px;
+}
+.cw-msg-row.out .cw-sender-label { text-align: right; }
+
+.cw-bubble {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.cw-msg-row.in .cw-bubble {
+  background: #ffffff;
+  color: #1c3a57;
+  border: 1px solid #eef6fb;
+  border-bottom-left-radius: 4px;
+}
+.cw-msg-row.out .cw-bubble {
+  background: #4fa9e0;
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.cw-time {
+  font-size: 10px;
+  color: #93aec2;
+  margin-top: 4px;
+}
+.cw-msg-row.out .cw-time { text-align: right; }
+
+.cw-system-pill {
+  align-self: center;
+  font-size: 11px;
+  color: #5f7d95;
+  background: #eaf6ff;
+  border-radius: 999px;
+  padding: 5px 12px;
+  text-align: center;
+  max-width: 90%;
+}
+
+.cw-input {
+  flex: 1;
+  border: 1.5px solid #d9ecf8;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 13px;
+  outline: none;
+  background: #eaf6ff;
+  color: #1c3a57;
+}
+.cw-input:focus { border-color: #4fa9e0; background: #ffffff; }
+
+.cw-send-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: none;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #4fa9e0, #2f7fbd);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 16px -8px rgba(47, 127, 189, 0.6);
+}
+.cw-send-btn:hover { opacity: 0.92; }
+
+.cw-attach-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1.5px solid #d9ecf8;
+  flex-shrink: 0;
+  background: #ffffff;
+  color: #5f7d95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.cw-attach-btn:hover { background: #eaf6ff; }
+.cw-attach-btn:disabled { opacity: 0.5; cursor: default; }
+
+.cw-attachment-img,
+.cw-attachment-video {
+  display: block;
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.cw-attachment-video { max-width: 260px; max-height: 260px; cursor: default; }
+.cw-bubble.has-media { padding: 4px; }

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bảng điều khiển — Anna Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Quicksand:wght@600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: "#1C3A57",
+          subtle: "#5F7D95",
+          canvas: "#EAF6FF",
+          line: "#D9ECF8",
+          brand: { DEFAULT: "#4FA9E0", dark: "#2F7FBD", light: "#EAF3FD" },
+          status: { new: "#3B6FE0", processing: "#C08A1E", waiting: "#8B5CF6", closed: "#6B7280" },
+          priority: { low: "#6B7280", medium: "#C08A1E", high: "#DC4C3F" },
+        },
+        fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"], display: ["Quicksand", "ui-sans-serif", "system-ui"] },
+      },
+    },
+  };
+</script>
+<link rel="stylesheet" href="/static/css/custom.css" />
+</head>
+<body class="bg-canvas font-sans text-ink min-h-screen">
+
+  <!-- ============ HEADER (dùng chung cho mọi view) ============ -->
+  <header class="app-header sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <span class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background: linear-gradient(145deg, #7ec4ec, #2f7fbd);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </span>
+        <span class="font-display font-bold text-ink">Anna Store</span>
+      </div>
+      <div class="flex items-center gap-2 text-sm">
+        <button id="nav-tickets-btn" class="nav-chip">Ticket</button>
+        <button id="nav-products-btn" class="nav-chip">Sản phẩm</button>
+        <button id="nav-orders-btn" class="nav-chip">Đơn hàng</button>
+        <button id="nav-users-btn" class="hidden nav-chip">Nhân viên</button>
+        <button id="nav-faqs-btn" class="hidden nav-chip">FAQ</button>
+        <span class="user-chip" id="current-user-label"></span>
+        <button id="logout-btn" class="nav-chip">Đăng xuất</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 py-8">
+
+    <!-- ==================================================================
+         VIEW 1: DANH SÁCH TICKET (mặc định)
+    =================================================================== -->
+    <section id="view-list">
+
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="font-display font-bold text-xl" id="ticket-list-heading">Danh sách ticket</h1>
+        <button id="open-create-ticket" class="bg-brand hover:bg-brand-dark text-white text-sm font-medium rounded-xl px-4 py-2 transition-colors">
+          Tạo ticket
+        </button>
+      </div>
+
+      <!-- ---- TỔNG QUAN: số lượng ticket theo trạng thái (chỉ admin/manager) ---- -->
+      <div id="ticket-summary-wrap" class="hidden mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-ink">Tổng quan ticket theo trạng thái</h2>
+          <div class="flex gap-1 bg-white border border-line rounded-full p-0.5 text-xs">
+            <button id="summary-view-numbers-btn" type="button"
+              class="px-3 py-1 rounded-full font-medium transition-colors">Số liệu</button>
+            <button id="summary-view-chart-btn" type="button"
+              class="px-3 py-1 rounded-full font-medium transition-colors">Biểu đồ</button>
+          </div>
+        </div>
+
+        <!-- Dạng số -->
+        <div id="ticket-status-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"></div>
+
+        <!-- Dạng biểu đồ tròn -->
+        <div id="ticket-status-chart-card" class="hidden bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] p-5">
+          <div class="flex flex-col sm:flex-row items-center gap-6">
+            <svg id="ticket-status-pie" viewBox="0 0 240 240" class="w-56 h-56 shrink-0"></svg>
+            <div id="ticket-status-legend" class="flex flex-col gap-2 text-sm"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- BANNER: Cần xử lý ưu tiên (AI/nhân viên đánh giá) ---- -->
+      <div id="priority-queue-banner" class="hidden mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-base">🔥</span>
+          <h2 class="text-sm font-semibold text-ink">Cần xử lý ưu tiên</h2>
+          <span class="text-xs text-subtle">— ticket chưa đóng, sắp theo mức độ khẩn cấp</span>
+        </div>
+        <div id="priority-queue-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+      </div>
+
+      <!-- ---- Banner: đang lọc theo 1 nhân viên cụ thể (bấm từ trang Nhân viên) ---- -->
+      <div id="agent-filter-banner" class="hidden mb-4 flex items-center justify-between bg-brand-light border border-brand/30 rounded-xl px-4 py-2.5 text-sm">
+        <span class="font-medium text-brand-dark"></span>
+        <button id="agent-filter-clear-btn" type="button" class="text-xs text-brand-dark underline shrink-0 ml-3">Bỏ lọc</button>
+      </div>
+
+      <!-- ---- BỘ LỌC: trạng thái + mức ưu tiên ---- -->
+      <div class="bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] p-4 mb-6 space-y-3">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-medium text-subtle w-20 shrink-0">Trạng thái</span>
+          <div id="status-filters" class="flex flex-wrap gap-2"></div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-medium text-subtle w-20 shrink-0">Ưu tiên</span>
+          <div id="priority-filters" class="flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+
+      <!-- ---- BẢNG DANH SÁCH TICKET ---- -->
+      <div class="bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-line text-left text-xs font-medium text-subtle">
+              <th class="px-4 py-3 w-14">#</th>
+              <th class="px-4 py-3">Tiêu đề</th>
+              <th class="px-4 py-3 w-40">Ưu tiên</th>
+              <th class="px-4 py-3 w-40">Trạng thái</th>
+              <th class="px-4 py-3 w-32">Cập nhật</th>
+            </tr>
+          </thead>
+          <tbody id="ticket-table-body"></tbody>
+        </table>
+        <p id="empty-state" class="hidden text-center text-sm text-subtle py-10">
+          Không có ticket nào khớp bộ lọc hiện tại.
+        </p>
+        <p id="list-loading-state" class="text-center text-sm text-subtle py-10">Đang tải danh sách ticket...</p>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         VIEW 2: CHI TIẾT TICKET
+    =================================================================== -->
+    <section id="view-detail" class="hidden">
+
+      <button id="back-to-list-btn" class="flex items-center gap-1.5 text-sm text-subtle hover:text-ink transition-colors mb-4">
+        <span>&larr;</span><span>Danh sách ticket</span>
+      </button>
+
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+
+        <!-- ---- CỘT CHÍNH ---- -->
+        <div class="space-y-6 min-w-0">
+
+          <div class="bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] p-6">
+            <div class="flex items-center gap-2 mb-1">
+              <p class="text-xs text-subtle" id="ticket-id-label">Ticket #—</p>
+              <span id="ticket-category-badge" class="hidden text-[11px] bg-brand-light text-brand-dark rounded px-1.5 py-0.5"></span>
+            </div>
+            <h1 class="font-display font-bold text-xl mb-3" id="ticket-title"></h1>
+            <p class="text-sm text-ink whitespace-pre-wrap" id="ticket-description"></p>
+          </div>
+
+          <!-- ---- LỊCH SỬ HỘI THOẠI ---- -->
+          <div class="bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] p-6">
+            <h2 class="text-sm font-semibold mb-4">Lịch sử hội thoại</h2>
+            <div id="interaction-list" class="space-y-3 mb-4"></div>
+
+            <form id="add-interaction-form" class="flex gap-2 pt-3 border-t border-line">
+              <input id="interaction-content" type="text" placeholder="Nhập tin nhắn trả lời khách hàng..." required
+                class="flex-1 border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+              <button type="submit" class="text-sm bg-ink text-white rounded-xl px-4 py-2 hover:opacity-90 transition-opacity">Gửi</button>
+            </form>
+          </div>
+
+          <!-- ---- FAQ LIÊN QUAN (câu trả lời mẫu theo từ khóa) ---- -->
+          <div id="faq-suggestions-panel" class="hidden bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] p-6">
+            <h2 class="text-sm font-semibold mb-1">FAQ liên quan</h2>
+            <p class="text-xs text-subtle mb-4">Gợi ý dựa trên từ khóa khớp với nội dung ticket — dùng ngay hoặc tham khảo trước khi trả lời.</p>
+            <div id="faq-suggestions-list" class="space-y-3"></div>
+          </div>
+
+          <!-- ---- GỢI Ý AI + NÚT DUYỆT ---- -->
+          <div class="bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-sm font-semibold">Gợi ý AI</h2>
+              <button id="generate-draft-btn" class="text-sm border border-line rounded-xl px-3 py-1.5 hover:bg-canvas transition-colors">
+                Sinh gợi ý AI
+              </button>
+            </div>
+
+            <p id="no-draft-msg" class="text-sm text-subtle">Chưa có gợi ý nào cho ticket này.</p>
+            <p id="draft-loading-msg" class="hidden text-sm text-subtle">Đang phân tích ticket và soạn nháp...</p>
+            <p id="draft-error-msg" class="hidden text-sm text-priority-high"></p>
+
+            <div id="draft-panel" class="draft-panel hidden border border-dashed border-brand rounded-xl p-4 bg-brand-light/40 space-y-3">
+              <span class="text-xs font-semibold text-brand-dark uppercase tracking-wide block">
+                Nháp — chưa gửi, cần duyệt
+              </span>
+              <div class="text-xs text-subtle space-x-4">
+                <span>Nhóm gợi ý: <span id="draft-category" class="text-ink font-medium"></span></span>
+                <span>Ưu tiên gợi ý: <span id="draft-priority" class="text-ink font-medium"></span></span>
+              </div>
+              <textarea id="draft-textarea" rows="5"
+                class="w-full border border-line rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand"></textarea>
+              <div class="flex justify-end gap-2">
+                <button id="regenerate-draft-btn" class="text-sm border border-line rounded-xl px-3 py-1.5 hover:bg-white transition-colors">
+                  Sinh lại
+                </button>
+                <!-- Nút DUYỆT: đây là bước duy nhất khiến câu trả lời AI được gửi cho khách -->
+                <button id="approve-draft-btn" class="text-sm bg-brand hover:bg-brand-dark text-white rounded-xl px-4 py-1.5 transition-colors">
+                  Duyệt &amp; Gửi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ---- SIDEBAR ---- -->
+        <aside class="space-y-6">
+          <div class="bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] p-5 space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-subtle mb-1">Trạng thái</label>
+              <select id="status-select" class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand"></select>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-medium text-subtle">Mức ưu tiên</label>
+                <span id="priority-source-badge" class="hidden text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-brand-light text-brand-dark">🤖 AI đề xuất</span>
+              </div>
+              <select id="priority-select" class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand"></select>
+              <p id="priority-permission-note" class="hidden text-xs text-subtle mt-1">Chỉ admin/manager được đổi mức ưu tiên.</p>
+              <button id="ai-priority-btn" type="button" class="mt-2 w-full text-xs font-medium text-brand-dark bg-brand-light hover:bg-brand hover:text-white rounded-xl px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                🤖 Nhờ AI đề xuất lại ưu tiên
+              </button>
+              <p id="ai-priority-error" class="hidden text-xs text-red-600 mt-1"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-subtle mb-1">Nhân viên phụ trách</label>
+              <select id="agent-select" class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand">
+                <option value="">— Chưa phân công —</option>
+              </select>
+              <p id="assign-permission-note" class="hidden text-xs text-subtle mt-1">Chỉ admin/manager được phân công.</p>
+            </div>
+            <p id="sidebar-error-msg" class="hidden text-xs text-priority-high"></p>
+          </div>
+
+          <div class="bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] p-5">
+            <h3 class="text-xs font-medium text-subtle mb-3">Khách hàng</h3>
+            <p class="text-sm font-medium" id="customer-name"></p>
+            <p class="text-sm text-subtle" id="customer-email"></p>
+            <p class="text-sm text-subtle" id="customer-phone"></p>
+          </div>
+
+          <div id="ticket-order-box" class="hidden bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] p-5">
+            <h3 class="text-xs font-medium text-subtle mb-3">Đơn hàng liên quan</h3>
+            <p class="text-sm font-medium">Đơn <span id="ticket-order-id"></span></p>
+            <p class="text-sm text-subtle" id="ticket-order-status"></p>
+            <p class="text-sm text-subtle" id="ticket-order-total"></p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         VIEW 3: QUẢN LÝ NHÂN VIÊN (chỉ admin/manager thấy tab này)
+    =================================================================== -->
+    <section id="view-users" class="hidden">
+
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="font-display font-bold text-xl">Quản lý nhân viên</h1>
+        <button id="open-create-user" class="hidden bg-brand hover:bg-brand-dark text-white text-sm font-medium rounded-xl px-4 py-2 transition-colors">
+          Thêm nhân viên
+        </button>
+      </div>
+
+      <div class="bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-line text-left text-xs font-medium text-subtle">
+              <th class="px-4 py-3">Họ tên</th>
+              <th class="px-4 py-3">Email</th>
+              <th class="px-4 py-3 w-32">Vai trò</th>
+              <th class="px-4 py-3 w-32">Trạng thái</th>
+              <th class="px-4 py-3 w-28 text-right">Đang xử lý</th>
+              <th class="px-4 py-3 w-24 text-right">Đã đóng</th>
+              <th class="px-4 py-3 w-32"></th>
+            </tr>
+          </thead>
+          <tbody id="user-table-body"></tbody>
+        </table>
+        <p id="user-empty-state" class="hidden text-center text-sm text-subtle py-10">Chưa có nhân viên nào.</p>
+        <p id="user-loading-state" class="text-center text-sm text-subtle py-10">Đang tải danh sách...</p>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         VIEW: QUẢN LÝ FAQ (câu trả lời mẫu theo từ khóa, chỉ admin/manager sửa)
+    =================================================================== -->
+    <section id="view-faqs" class="hidden">
+
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="font-display font-bold text-xl">FAQ &amp; câu trả lời mẫu</h1>
+        <button id="open-create-faq" class="hidden bg-brand hover:bg-brand-dark text-white text-sm font-medium rounded-xl px-4 py-2 transition-colors">
+          Thêm FAQ
+        </button>
+      </div>
+      <p class="text-sm text-subtle mb-4">
+        Mỗi FAQ gắn với 1 tập từ khóa. Khi ticket có nội dung khớp từ khóa, FAQ sẽ được gợi ý
+        trực tiếp cho nhân viên và đưa vào ngữ cảnh khi AI soạn nháp trả lời.
+      </p>
+
+      <div class="bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-line text-left text-xs font-medium text-subtle">
+              <th class="px-4 py-3 w-1/4">Câu hỏi</th>
+              <th class="px-4 py-3 w-1/4">Từ khóa</th>
+              <th class="px-4 py-3">Câu trả lời</th>
+              <th class="px-4 py-3 w-24">Trạng thái</th>
+              <th class="px-4 py-3 w-32"></th>
+            </tr>
+          </thead>
+          <tbody id="faq-table-body"></tbody>
+        </table>
+        <p id="faq-empty-state" class="hidden text-center text-sm text-subtle py-10">Chưa có FAQ nào.</p>
+        <p id="faq-loading-state" class="text-center text-sm text-subtle py-10">Đang tải danh sách...</p>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         VIEW: SẢN PHẨM & KHO
+    =================================================================== -->
+    <section id="view-products" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="font-display font-bold text-xl">Sản phẩm &amp; kho</h1>
+        <button id="open-create-product" class="hidden bg-brand hover:bg-brand-dark text-white text-sm font-medium rounded-xl px-4 py-2 transition-colors">
+          Thêm sản phẩm
+        </button>
+      </div>
+
+      <div class="bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-line text-left text-xs font-medium text-subtle">
+              <th class="px-4 py-3">Tên sản phẩm</th>
+              <th class="px-4 py-3 w-28">Giá</th>
+              <th class="px-4 py-3">Tồn kho theo size/màu</th>
+              <th class="px-4 py-3 w-40"></th>
+            </tr>
+          </thead>
+          <tbody id="product-table-body"></tbody>
+        </table>
+        <p id="product-empty-state" class="hidden text-center text-sm text-subtle py-10">Chưa có sản phẩm nào.</p>
+        <p id="product-loading-state" class="text-center text-sm text-subtle py-10">Đang tải danh sách...</p>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         VIEW: ĐƠN HÀNG
+    =================================================================== -->
+    <section id="view-orders" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="font-display font-bold text-xl">Đơn hàng</h1>
+        <button id="open-create-order" class="bg-brand hover:bg-brand-dark text-white text-sm font-medium rounded-xl px-4 py-2 transition-colors">
+          Tạo đơn hàng
+        </button>
+      </div>
+
+      <div class="bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-line text-left text-xs font-medium text-subtle">
+              <th class="px-4 py-3 w-14">#</th>
+              <th class="px-4 py-3">Khách hàng</th>
+              <th class="px-4 py-3">Sản phẩm</th>
+              <th class="px-4 py-3 w-28">Tổng tiền</th>
+              <th class="px-4 py-3 w-40">Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody id="order-table-body"></tbody>
+        </table>
+        <p id="order-empty-state" class="hidden text-center text-sm text-subtle py-10">Chưa có đơn hàng nào.</p>
+        <p id="order-loading-state" class="text-center text-sm text-subtle py-10">Đang tải danh sách...</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ MODAL: THÊM SẢN PHẨM ============ -->
+  <div id="create-product-modal" class="hidden fixed inset-0 bg-ink/40 flex items-center justify-center px-4 z-50">
+    <div class="bg-white rounded-xl border border-line w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold">Thêm sản phẩm</h2>
+        <button id="close-create-product" class="text-subtle hover:text-ink">&times;</button>
+      </div>
+
+      <form id="create-product-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Tên sản phẩm</label>
+          <input id="new-product-name" type="text" required
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Mô tả (không bắt buộc)</label>
+          <textarea id="new-product-description" rows="2"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Giá bán (VNĐ)</label>
+          <input id="new-product-price" type="number" min="1" step="1000" required
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-sm font-medium">Size / Màu / Tồn kho ban đầu</label>
+            <button type="button" id="add-variant-row" class="text-xs text-brand hover:underline">+ Thêm dòng</button>
+          </div>
+          <div id="variant-rows" class="space-y-2"></div>
+        </div>
+
+        <p id="create-product-error" class="text-sm text-priority-high hidden"></p>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="cancel-create-product"
+            class="text-sm border border-line rounded-xl px-4 py-2 hover:bg-canvas transition-colors">Huỷ</button>
+          <button type="submit"
+            class="text-sm bg-brand hover:bg-brand-dark text-white rounded-xl px-4 py-2 transition-colors">Tạo sản phẩm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: TẠO ĐƠN HÀNG ============ -->
+  <div id="create-order-modal" class="hidden fixed inset-0 bg-ink/40 flex items-center justify-center px-4 z-50">
+    <div class="bg-white rounded-xl border border-line w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold">Tạo đơn hàng</h2>
+        <button id="close-create-order" class="text-subtle hover:text-ink">&times;</button>
+      </div>
+
+      <form id="create-order-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Khách hàng</label>
+          <select id="order-customer-select" required
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand">
+            <option value="">— Chọn khách hàng —</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Địa chỉ giao hàng (không bắt buộc)</label>
+          <input id="order-shipping-address" type="text"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-sm font-medium">Sản phẩm trong đơn</label>
+            <button type="button" id="add-order-item-row" class="text-xs text-brand hover:underline">+ Thêm dòng</button>
+          </div>
+          <div id="order-item-rows" class="space-y-2"></div>
+        </div>
+
+        <p id="create-order-error" class="text-sm text-priority-high hidden"></p>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="cancel-create-order"
+            class="text-sm border border-line rounded-xl px-4 py-2 hover:bg-canvas transition-colors">Huỷ</button>
+          <button type="submit"
+            class="text-sm bg-brand hover:bg-brand-dark text-white rounded-xl px-4 py-2 transition-colors">Tạo đơn</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: THÊM NHÂN VIÊN (thuộc view nhân viên) ============ -->
+  <div id="create-user-modal" class="hidden fixed inset-0 bg-ink/40 flex items-center justify-center px-4 z-50">
+    <div class="bg-white rounded-xl border border-line w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold">Thêm nhân viên</h2>
+        <button id="close-create-user" class="text-subtle hover:text-ink">&times;</button>
+      </div>
+
+      <form id="create-user-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Họ tên</label>
+          <input id="new-user-name" type="text" required
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Email</label>
+          <input id="new-user-email" type="email" required
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Mật khẩu</label>
+          <input id="new-user-password" type="text" required minlength="6"
+            placeholder="Tối thiểu 6 ký tự"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Vai trò</label>
+          <select id="new-user-role"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand">
+            <option value="agent" selected>Nhân viên (Agent)</option>
+            <option value="manager">Quản lý (Manager)</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+
+        <p id="create-user-error" class="text-sm text-priority-high hidden"></p>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="cancel-create-user"
+            class="text-sm border border-line rounded-xl px-4 py-2 hover:bg-canvas transition-colors">Huỷ</button>
+          <button type="submit"
+            class="text-sm bg-brand hover:bg-brand-dark text-white rounded-xl px-4 py-2 transition-colors">Tạo tài khoản</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: THÊM/SỬA FAQ ============ -->
+  <div id="faq-modal" class="hidden fixed inset-0 bg-ink/40 flex items-center justify-center px-4 z-50">
+    <div class="bg-white rounded-xl border border-line w-full max-w-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold" id="faq-modal-title">Thêm FAQ</h2>
+        <button id="close-faq-modal" class="text-subtle hover:text-ink">&times;</button>
+      </div>
+
+      <form id="faq-form" class="space-y-4">
+        <input type="hidden" id="faq-id" />
+        <div>
+          <label class="block text-sm font-medium mb-1">Câu hỏi</label>
+          <input id="faq-question" type="text" required
+            placeholder="VD: Chính sách đổi trả hàng của shop?"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Từ khóa (cách nhau bởi dấu phẩy)</label>
+          <input id="faq-keywords" type="text" required
+            placeholder="VD: đổi trả, đổi hàng, trả hàng, không vừa"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+          <p class="text-xs text-subtle mt-1">Ticket có tiêu đề/mô tả/tin nhắn chứa 1 trong các từ khóa này sẽ được gợi ý FAQ này.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Câu trả lời</label>
+          <textarea id="faq-answer" rows="5" required
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand"></textarea>
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="faq-is-active" type="checkbox" checked class="rounded border-line" />
+          <label for="faq-is-active" class="text-sm">Đang bật (hiển thị gợi ý cho nhân viên/AI)</label>
+        </div>
+
+        <p id="faq-form-error" class="text-sm text-priority-high hidden"></p>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="cancel-faq-form"
+            class="text-sm border border-line rounded-xl px-4 py-2 hover:bg-canvas transition-colors">Huỷ</button>
+          <button type="submit"
+            class="text-sm bg-brand hover:bg-brand-dark text-white rounded-xl px-4 py-2 transition-colors">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: TẠO TICKET (thuộc view danh sách) ============ -->
+  <div id="create-ticket-modal" class="hidden fixed inset-0 bg-ink/40 flex items-center justify-center px-4 z-50">
+    <div class="bg-white rounded-xl border border-line w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold">Tạo ticket mới</h2>
+        <button id="close-create-ticket" class="text-subtle hover:text-ink">&times;</button>
+      </div>
+
+      <form id="create-ticket-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Khách hàng</label>
+          <div class="flex gap-2">
+            <select id="ticket-customer-select" required
+              class="flex-1 border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand">
+              <option value="">— Chọn khách hàng —</option>
+            </select>
+            <button type="button" id="toggle-new-customer"
+              class="border border-line rounded-xl px-3 py-2 text-sm hover:bg-canvas transition-colors">
+              + Khách mới
+            </button>
+          </div>
+        </div>
+
+        <div id="new-customer-fields" class="hidden space-y-3 border border-dashed border-line rounded-xl p-3 bg-canvas">
+          <p class="text-xs font-medium text-subtle">Tạo nhanh khách hàng mới</p>
+          <input id="new-customer-name" type="text" placeholder="Họ tên"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+          <input id="new-customer-email" type="email" placeholder="Email"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+          <input id="new-customer-phone" type="text" placeholder="Số điện thoại (không bắt buộc)"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+          <button type="button" id="save-new-customer"
+            class="text-sm bg-ink text-white rounded-xl px-3 py-1.5 hover:opacity-90 transition-opacity">
+            Lưu khách hàng
+          </button>
+          <p id="new-customer-error" class="text-xs text-priority-high hidden"></p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Tiêu đề</label>
+          <input id="ticket-title-input" type="text" required
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Mô tả</label>
+          <textarea id="ticket-description-input" required rows="4"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Mức ưu tiên</label>
+          <select id="ticket-priority-input"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand">
+            <option value="low">Thấp</option>
+            <option value="medium" selected>Trung bình</option>
+            <option value="high">Cao</option>
+          </select>
+        </div>
+
+        <p id="create-ticket-error" class="text-sm text-priority-high hidden"></p>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="cancel-create-ticket"
+            class="text-sm border border-line rounded-xl px-4 py-2 hover:bg-canvas transition-colors">Huỷ</button>
+          <button type="submit"
+            class="text-sm bg-brand hover:bg-brand-dark text-white rounded-xl px-4 py-2 transition-colors">Tạo ticket</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

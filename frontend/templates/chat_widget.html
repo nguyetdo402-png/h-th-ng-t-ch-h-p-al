@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chat hỗ trợ — Anna Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Quicksand:wght@600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: "#1C3A57",
+          subtle: "#5F7D95",
+          canvas: "#EAF6FF",
+          line: "#D9ECF8",
+          brand: { DEFAULT: "#4FA9E0", dark: "#2F7FBD", light: "#EAF3FD" },
+          status: { new: "#3B6FE0", processing: "#C08A1E", waiting: "#8B5CF6", closed: "#6B7280" },
+          priority: { low: "#6B7280", medium: "#C08A1E", high: "#DC4C3F" },
+        },
+        fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"], display: ["Quicksand", "ui-sans-serif", "system-ui"] },
+      },
+    },
+  };
+</script>
+<link rel="stylesheet" href="/static/css/custom.css" />
+</head>
+<body class="bg-canvas font-sans text-ink min-h-screen flex items-center justify-center px-4 py-6" style="background-image: radial-gradient(900px 500px at 85% -10%, #d3ecfb 0%, transparent 60%), radial-gradient(700px 420px at -10% 110%, #d3ecfb 0%, transparent 55%);">
+
+  <div class="w-full max-w-md">
+    <div class="mb-4 flex items-center gap-2.5">
+      <span class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background: linear-gradient(145deg, #7ec4ec, #2f7fbd);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      </span>
+      <span class="font-display font-bold text-lg text-ink">Anna Store</span>
+    </div>
+
+    <!-- ====================== FORM BẮT ĐẦU HỘI THOẠI ====================== -->
+    <div id="view-start" class="bg-white border border-line rounded-2xl shadow-[0_20px_45px_-28px_rgba(47,127,189,0.4)] p-6">
+      <div id="customer-status-bar" class="flex items-center justify-between text-xs mb-4 pb-3 border-b border-line"></div>
+
+      <h1 class="font-display font-bold text-lg mb-1">Xin chào 👋</h1>
+      <p class="text-sm text-subtle mb-5">
+        Để lại thông tin và câu hỏi của bạn — chúng tôi sẽ phản hồi ngay.
+      </p>
+
+      <form id="start-form" class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-subtle mb-1">Họ tên</label>
+          <input id="start-name" type="text" required placeholder="Nguyễn Văn A"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-subtle mb-1">Email</label>
+          <input id="start-email" type="email" required placeholder="ban@example.com"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-subtle mb-1">Số điện thoại (không bắt buộc)</label>
+          <input id="start-phone" type="text" placeholder="09xxxxxxxx"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
+        </div>
+        <div id="start-order-field" class="hidden">
+          <label class="block text-xs font-medium text-subtle mb-1">Yêu cầu này liên quan đơn hàng nào? (không bắt buộc)</label>
+          <select id="start-order-select"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand">
+            <option value="">— Không liên quan đơn hàng nào —</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-subtle mb-1">Bạn cần hỗ trợ gì?</label>
+          <textarea id="start-message" required rows="3" placeholder="Mô tả ngắn gọn vấn đề của bạn..."
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand"></textarea>
+        </div>
+        <p id="start-error" class="hidden text-sm text-priority-high"></p>
+        <button type="submit" id="start-submit-btn"
+          class="w-full bg-brand text-white text-sm font-medium rounded-xl py-2.5 hover:bg-brand-dark transition-colors">
+          Gửi yêu cầu
+        </button>
+      </form>
+    </div>
+
+    <!-- ====================== KHUNG CHAT ====================== -->
+    <div id="view-chat" class="hidden bg-white border border-line rounded-2xl shadow-[0_20px_45px_-28px_rgba(47,127,189,0.4)] flex flex-col h-[70vh] overflow-hidden">
+      <div class="border-b border-line px-4 py-3 flex items-center justify-between bg-white">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="cw-shop-avatar">AS</span>
+          <div class="min-w-0">
+            <p class="text-sm font-bold text-ink truncate">Anna Store</p>
+            <p class="text-xs text-subtle truncate">
+              Mã yêu cầu <span id="chat-ticket-id" class="font-medium"></span> ·
+              <span id="chat-status" class="font-medium"></span>
+            </p>
+            <p id="chat-order-line" class="hidden text-xs text-brand-dark"></p>
+          </div>
+        </div>
+        <button id="new-chat-btn" class="text-xs text-subtle hover:text-ink underline shrink-0 ml-2">
+          Yêu cầu mới
+        </button>
+      </div>
+
+      <div id="chat-messages" class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3" style="background:#eaf6ff;"></div>
+
+      <!-- ---- Xem trước ảnh/video TRƯỚC KHI GỬI (giống Messenger) ---- -->
+      <div id="chat-attachment-preview" class="hidden border-t border-line bg-white px-3 py-2.5 flex items-center gap-3">
+        <div class="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-canvas flex items-center justify-center">
+          <img id="preview-img" class="hidden w-full h-full object-cover" alt="Xem trước ảnh" />
+          <video id="preview-video" class="hidden w-full h-full object-cover" muted></video>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p id="preview-filename" class="text-xs font-medium text-ink truncate"></p>
+          <p id="preview-hint" class="text-[11px] text-subtle">Xem lại trước khi gửi</p>
+        </div>
+        <button type="button" id="preview-cancel-btn" class="text-xs text-subtle hover:text-ink px-2 py-1 shrink-0">Huỷ</button>
+        <button type="button" id="preview-send-btn" class="cw-send-btn shrink-0" aria-label="Gửi ảnh/video">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="m3 3 18 9-18 9 4.5-9L3 3Z"/></svg>
+        </button>
+      </div>
+
+      <form id="chat-form" class="border-t border-line bg-white p-3 flex items-center gap-2.5">
+        <input id="chat-file-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp,video/mp4,video/webm,video/quicktime" class="hidden" />
+        <button type="button" id="chat-attach-btn" class="cw-attach-btn" aria-label="Gửi ảnh/video" title="Gửi ảnh hoặc video">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <input id="chat-input" type="text" required placeholder="Nhập tin nhắn..." autocomplete="off" class="cw-input" />
+        <button type="submit" class="cw-send-btn" aria-label="Gửi">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="m3 3 18 9-18 9 4.5-9L3 3Z"/></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+<script>
+const API_BASE = "/api/v1/public/chat";
+const STORAGE_KEY = "cs_ai_public_chat";
+
+const SENDER_LABEL = { customer: "Bạn", agent: "Nhân viên", bot: "Anna Store", system: "Hệ thống" };
+const STATUS_LABEL = { new: "Mới tiếp nhận", processing: "Đang xử lý", waiting: "Chờ phản hồi", closed: "Đã đóng" };
+const ORDER_STATUS_LABEL = { pending: "Chờ xác nhận", confirmed: "Đã xác nhận", shipping: "Đang giao", completed: "Hoàn tất", cancelled: "Đã huỷ" };
+
+function getSession() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+function saveSession(ticketId, accessToken, email, name) {
+  const existing = getSession() || {};
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      ticketId,
+      accessToken: accessToken || existing.accessToken,
+      email,
+      name: name || existing.name,
+    })
+  );
+}
+function clearSession() {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+async function apiFetch(path, options = {}) {
+  const response = await fetch(API_BASE + path, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+  });
+  if (!response.ok) {
+    let detail = `Lỗi ${response.status}`;
+    try {
+      const data = await response.json();
+      detail = data.detail || detail;
+    } catch (_) {}
+    throw new Error(detail);
+  }
+  return response.json();
+}
+
+function formatTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+}
+
+function initials(senderType) {
+  if (senderType === "agent") return "NV";
+  return "AS"; // bot (Anna Store) và mọi trường hợp còn lại dùng chung avatar shop
+}
+
+function renderMessages(state) {
+  document.getElementById("chat-ticket-id").textContent = "#" + state.ticket_id;
+  document.getElementById("chat-status").textContent = STATUS_LABEL[state.status] || state.status;
+
+  const orderLine = document.getElementById("chat-order-line");
+  if (state.order_id) {
+    orderLine.textContent = `Liên quan đơn hàng #${state.order_id}`;
+    orderLine.classList.remove("hidden");
+  } else {
+    orderLine.classList.add("hidden");
+  }
+
+  const list = document.getElementById("chat-messages");
+  list.innerHTML = "";
+  for (const item of state.messages) {
+    // Backend không còn trả tin nhắn "system" (log nội bộ) cho khách nữa,
+    // nhưng vẫn bỏ qua phòng hờ nếu có dữ liệu cũ/khác lọt qua.
+    if (item.sender_type === "system") continue;
+
+    const isCustomer = item.sender_type === "customer";
+    const row = document.createElement("div");
+    row.className = "cw-msg-row " + (isCustomer ? "out" : "in");
+
+    if (!isCustomer) {
+      const avatar = document.createElement("div");
+      avatar.className = "cw-msg-avatar";
+      avatar.textContent = initials(item.sender_type);
+      row.appendChild(avatar);
+    }
+
+    const col = document.createElement("div");
+
+    if (!isCustomer) {
+      const label = document.createElement("div");
+      label.className = "cw-sender-label";
+      label.textContent = SENDER_LABEL[item.sender_type] || item.sender_type;
+      col.appendChild(label);
+    }
+
+    const bubble = document.createElement("div");
+    bubble.className = "cw-bubble";
+    if (item.attachment_url) {
+      bubble.classList.add("has-media");
+      // Tin nhắn có file đính kèm: hiện ảnh/video, KHÔNG hiện text placeholder
+      // dạng "[Đã gửi 1 hình ảnh]" (chỉ để phục vụ nơi không hiển thị được media).
+      if (item.attachment_type === "video") {
+        const video = document.createElement("video");
+        video.className = "cw-attachment-video";
+        video.src = item.attachment_url;
+        video.controls = true;
+        bubble.appendChild(video);
+      } else {
+        const img = document.createElement("img");
+        img.className = "cw-attachment-img";
+        img.src = item.attachment_url;
+        img.alt = item.attachment_filename || "Hình ảnh đính kèm";
+        img.addEventListener("click", () => window.open(item.attachment_url, "_blank"));
+        bubble.appendChild(img);
+      }
+    } else {
+      bubble.textContent = item.content;
+    }
+    col.appendChild(bubble);
+
+    const time = document.createElement("div");
+    time.className = "cw-time";
+    time.textContent = formatTime(item.created_at);
+    col.appendChild(time);
+
+    row.appendChild(col);
+    list.appendChild(row);
+  }
+  list.scrollTop = list.scrollHeight;
+}
+
+function showChatView() {
+  document.getElementById("view-start").classList.add("hidden");
+  document.getElementById("view-chat").classList.remove("hidden");
+}
+
+let pollTimer = null;
+function startPolling(ticketId, accessToken) {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    try {
+      const state = await apiFetch(`/${ticketId}?access_token=${encodeURIComponent(accessToken)}`);
+      renderMessages(state);
+    } catch (_) {
+      /* im lặng bỏ qua lỗi poll, thử lại ở lần sau */
+    }
+  }, 4000);
+}
+
+// ---- Form bắt đầu hội thoại ----
+
+// ---- Nhận diện khách hàng đã đăng nhập qua /account (nếu có) ----
+// Dùng key localStorage RIÊNG với STORAGE_KEY ở trên (đó là phiên hội thoại
+// theo ticket, còn đây là tài khoản khách hàng — 2 khái niệm độc lập, khách
+// vẫn chat ẩn danh được dù không đăng nhập).
+const CUSTOMER_TOKEN_KEY = "anna_customer_token";
+const CUSTOMER_KEY = "anna_customer";
+
+function getLoggedInCustomer() {
+  const raw = localStorage.getItem(CUSTOMER_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function renderCustomerStatusBar() {
+  const bar = document.getElementById("customer-status-bar");
+  const customer = getLoggedInCustomer();
+
+  if (customer) {
+    bar.innerHTML = `
+      <span class="text-subtle">Xin chào, <span class="font-semibold text-ink">${customer.name}</span></span>
+      <span class="flex items-center gap-3">
+        <a href="/my-account" class="text-brand-dark font-semibold hover:underline">Tài khoản của tôi</a>
+        <button id="customer-logout-btn" class="text-subtle hover:text-ink underline">Đăng xuất</button>
+      </span>
+    `;
+    document.getElementById("customer-logout-btn").addEventListener("click", () => {
+      localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+      localStorage.removeItem(CUSTOMER_KEY);
+      renderCustomerStatusBar();
+      document.getElementById("start-name").value = "";
+      document.getElementById("start-email").value = "";
+      document.getElementById("start-name").disabled = false;
+      document.getElementById("start-email").disabled = false;
+    });
+
+    // Tự điền tên/email + khoá lại (khỏi gõ nhầm khác với tài khoản đang đăng nhập).
+    // Vẫn đọc được giá trị qua .value bình thường dù input bị disabled.
+    document.getElementById("start-name").value = customer.name;
+    document.getElementById("start-email").value = customer.email;
+    document.getElementById("start-name").disabled = true;
+    document.getElementById("start-email").disabled = true;
+    if (customer.phone) document.getElementById("start-phone").value = customer.phone;
+    loadOrdersForEmail(customer.email);
+  } else {
+    bar.innerHTML = `
+      <span class="text-subtle">Chat ẩn danh — không cần tài khoản</span>
+      <a href="/account" class="text-brand-dark font-semibold hover:underline">Đăng nhập / Đăng ký</a>
+    `;
+  }
+}
+renderCustomerStatusBar();
+
+async function loadOrdersForEmail(email) {
+  const orderField = document.getElementById("start-order-field");
+  const orderSelect = document.getElementById("start-order-select");
+  if (!email) return;
+
+  try {
+    const orders = await apiFetch(`/orders?email=${encodeURIComponent(email)}`);
+    if (orders.length === 0) {
+      orderField.classList.add("hidden");
+      return;
+    }
+    orderSelect.innerHTML = '<option value="">— Không liên quan đơn hàng nào —</option>';
+    for (const order of orders) {
+      const opt = document.createElement("option");
+      opt.value = order.id;
+      const itemsSummary = order.items
+        .map((it) => `${it.quantity}x ${it.product_variant.size}/${it.product_variant.color}`)
+        .join(", ");
+      opt.textContent = `Đơn #${order.id} — ${itemsSummary || "?"} (${ORDER_STATUS_LABEL[order.status] || order.status})`;
+      orderSelect.appendChild(opt);
+    }
+    orderField.classList.remove("hidden");
+  } catch (_) {
+    orderField.classList.add("hidden");
+  }
+}
+
+document.getElementById("start-email").addEventListener("blur", async () => {
+  await loadOrdersForEmail(document.getElementById("start-email").value.trim());
+});
+
+document.getElementById("start-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById("start-error");
+  const btn = document.getElementById("start-submit-btn");
+  errorEl.classList.add("hidden");
+  btn.disabled = true;
+  btn.textContent = "Đang gửi...";
+
+  const name = document.getElementById("start-name").value.trim();
+  const email = document.getElementById("start-email").value.trim();
+  const phone = document.getElementById("start-phone").value.trim();
+  const message = document.getElementById("start-message").value.trim();
+
+  try {
+    const state = await apiFetch("", {
+      method: "POST",
+      body: JSON.stringify({
+        name,
+        email,
+        phone: phone || null,
+        message,
+        order_id: document.getElementById("start-order-select").value
+          ? Number(document.getElementById("start-order-select").value)
+          : null,
+      }),
+    });
+    saveSession(state.ticket_id, state.access_token, email, name);
+    showChatView();
+    renderMessages(state);
+    startPolling(state.ticket_id, state.access_token);
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Gửi yêu cầu";
+  }
+});
+
+// ---- Gửi tin nhắn tiếp theo trong hội thoại đang mở ----
+document.getElementById("chat-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const session = getSession();
+  if (!session) return;
+
+  const input = document.getElementById("chat-input");
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = "";
+
+  try {
+    const state = await apiFetch("", {
+      method: "POST",
+      body: JSON.stringify({
+        name: session.name,
+        email: session.email,
+        message,
+        ticket_id: session.ticketId,
+        access_token: session.accessToken,
+      }),
+    });
+    saveSession(state.ticket_id, state.access_token, session.email);
+    renderMessages(state);
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+document.getElementById("new-chat-btn").addEventListener("click", () => {
+  if (pollTimer) clearInterval(pollTimer);
+  clearSession();
+  clearPendingAttachment();
+  document.getElementById("start-form").reset();
+  document.getElementById("view-chat").classList.add("hidden");
+  document.getElementById("view-start").classList.remove("hidden");
+});
+
+// ---- Gửi kèm ảnh/video trong hội thoại đang mở ----
+// Luồng: chọn file -> CHỈ xem trước (chưa gửi) -> bấm nút gửi trong khung xem
+// trước mới thực sự upload lên server (giống Messenger), thay vì tự gửi ngay
+// khi vừa chọn file như trước đây.
+const MAX_IMAGE_MB = 10;
+const MAX_VIDEO_MB = 50;
+
+let pendingAttachment = null; // { file, previewUrl } hoặc null nếu chưa chọn gì
+
+const attachmentPreviewBar = document.getElementById("chat-attachment-preview");
+const previewImg = document.getElementById("preview-img");
+const previewVideo = document.getElementById("preview-video");
+const previewFilename = document.getElementById("preview-filename");
+const previewHint = document.getElementById("preview-hint");
+const previewSendBtn = document.getElementById("preview-send-btn");
+const previewCancelBtn = document.getElementById("preview-cancel-btn");
+
+function clearPendingAttachment() {
+  if (pendingAttachment) URL.revokeObjectURL(pendingAttachment.previewUrl);
+  pendingAttachment = null;
+  attachmentPreviewBar.classList.add("hidden");
+  previewImg.classList.add("hidden");
+  previewVideo.classList.add("hidden");
+  previewVideo.src = "";
+  document.getElementById("chat-file-input").value = ""; // cho phép chọn lại cùng 1 file lần sau
+}
+
+document.getElementById("chat-attach-btn").addEventListener("click", () => {
+  document.getElementById("chat-file-input").click();
+});
+
+document.getElementById("chat-file-input").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const isVideo = file.type.startsWith("video/");
+  const limitMb = isVideo ? MAX_VIDEO_MB : MAX_IMAGE_MB;
+  if (file.size > limitMb * 1024 * 1024) {
+    alert(`File vượt quá giới hạn ${limitMb}MB cho ${isVideo ? "video" : "ảnh"}.`);
+    e.target.value = "";
+    return;
+  }
+
+  if (pendingAttachment) URL.revokeObjectURL(pendingAttachment.previewUrl);
+  const previewUrl = URL.createObjectURL(file);
+  pendingAttachment = { file, previewUrl };
+
+  if (isVideo) {
+    previewVideo.src = previewUrl;
+    previewVideo.classList.remove("hidden");
+    previewImg.classList.add("hidden");
+  } else {
+    previewImg.src = previewUrl;
+    previewImg.classList.remove("hidden");
+    previewVideo.classList.add("hidden");
+  }
+  previewFilename.textContent = file.name;
+  previewHint.textContent = "Xem lại trước khi gửi";
+  attachmentPreviewBar.classList.remove("hidden");
+});
+
+previewCancelBtn.addEventListener("click", () => {
+  clearPendingAttachment();
+});
+
+previewSendBtn.addEventListener("click", async () => {
+  if (!pendingAttachment) return;
+  const session = getSession();
+  if (!session) return;
+
+  previewSendBtn.disabled = true;
+  previewCancelBtn.disabled = true;
+  previewHint.textContent = "Đang gửi...";
+  try {
+    const formData = new FormData();
+    formData.append("access_token", session.accessToken);
+    formData.append("file", pendingAttachment.file);
+
+    const response = await fetch(`${API_BASE}/${session.ticketId}/attachments`, {
+      method: "POST",
+      body: formData, // KHÔNG set Content-Type thủ công — browser tự thêm boundary đúng cho multipart
+    });
+    if (!response.ok) {
+      let detail = `Lỗi ${response.status}`;
+      try { detail = (await response.json()).detail || detail; } catch (_) {}
+      throw new Error(detail);
+    }
+    const state = await response.json();
+    renderMessages(state);
+    clearPendingAttachment();
+  } catch (err) {
+    alert(err.message);
+    previewHint.textContent = "Xem lại trước khi gửi";
+  } finally {
+    previewSendBtn.disabled = false;
+    previewCancelBtn.disabled = false;
+  }
+});
+
+// ---- Khôi phục hội thoại đang dang dở (nếu khách quay lại trang) ----
+(async function init() {
+  const session = getSession();
+  if (!session) return;
+  if (!session.accessToken) {
+    // Phiên cũ trước khi có access_token — không còn tra cứu lại được an
+    // toàn, bắt khách bắt đầu yêu cầu mới.
+    clearSession();
+    return;
+  }
+  try {
+    const state = await apiFetch(
+      `/${session.ticketId}?access_token=${encodeURIComponent(session.accessToken)}`
+    );
+    showChatView();
+    renderMessages(state);
+    startPolling(state.ticket_id, state.access_token);
+  } catch (_) {
+    clearSession();
+  }
+})();
+</script>
+</body>
+</html>

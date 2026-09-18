@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tài khoản của tôi — Anna Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Quicksand:wght@600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: "#1C3A57",
+          subtle: "#5F7D95",
+          canvas: "#EAF6FF",
+          line: "#D9ECF8",
+          brand: { DEFAULT: "#4FA9E0", dark: "#2F7FBD", light: "#EAF3FD" },
+          status: { new: "#3B6FE0", processing: "#C08A1E", waiting: "#8B5CF6", closed: "#6B7280" },
+        },
+        fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"], display: ["Quicksand", "ui-sans-serif", "system-ui"] },
+      },
+    },
+  };
+</script>
+<link rel="stylesheet" href="/static/css/custom.css" />
+</head>
+<body class="bg-canvas font-sans text-ink min-h-screen"
+      style="background-image: radial-gradient(900px 500px at 85% -10%, #d3ecfb 0%, transparent 60%);">
+
+  <header class="bg-white border-b border-line">
+    <div class="max-w-3xl mx-auto px-5 h-16 flex items-center justify-between">
+      <a href="/chat" class="flex items-center gap-2.5">
+        <span class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(145deg, #7ec4ec, #2f7fbd);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </span>
+        <span class="font-display font-bold text-ink">Anna Store</span>
+      </a>
+      <div class="flex items-center gap-4 text-sm">
+        <span id="customer-name-label" class="text-subtle"></span>
+        <button id="logout-btn" class="text-subtle hover:text-ink underline">Đăng xuất</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-5 py-8">
+    <h1 class="font-display font-bold text-2xl mb-1">Tài khoản của tôi</h1>
+    <p class="text-subtle text-sm mb-8">Toàn bộ đơn hàng và lịch sử hỗ trợ của bạn tại Anna Store.</p>
+
+    <!-- ====================== TABS ====================== -->
+    <div class="flex gap-1 bg-white border border-line rounded-xl p-1 mb-6 w-fit">
+      <button id="tab-orders-btn" class="px-4 py-2 rounded-lg text-sm font-semibold bg-brand text-white transition-colors">Đơn hàng</button>
+      <button id="tab-tickets-btn" class="px-4 py-2 rounded-lg text-sm font-semibold text-subtle transition-colors">Hỗ trợ / Chat</button>
+    </div>
+
+    <!-- ====================== TAB: ĐƠN HÀNG ====================== -->
+    <section id="tab-orders">
+      <div class="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-5">
+        <div id="orders-list" class="space-y-2 md:block"></div>
+        <div id="order-detail-panel" class="hidden md:block bg-white border border-line rounded-2xl p-5 min-h-[300px]">
+          <button id="back-to-orders-list-btn" class="md:hidden flex items-center gap-1 text-xs font-semibold text-brand-dark mb-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="m15 18-6-6 6-6"/></svg>
+            Quay lại danh sách
+          </button>
+          <p id="order-detail-placeholder" class="text-sm text-subtle text-center py-16">Chọn 1 đơn hàng bên trái để xem chi tiết.</p>
+          <div id="order-detail-content" class="hidden">
+            <div class="flex items-center justify-between mb-1">
+              <h3 id="order-detail-title" class="font-semibold"></h3>
+              <span id="order-detail-status" class="text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ml-3"></span>
+            </div>
+            <p id="order-detail-meta" class="text-xs text-subtle mb-4"></p>
+            <div id="order-detail-items" class="space-y-2 border-t border-line pt-3 mb-3"></div>
+            <div class="flex items-center justify-between text-sm font-semibold pt-3 border-t border-line">
+              <span>Tổng cộng</span>
+              <span id="order-detail-total" class="text-ink"></span>
+            </div>
+            <p id="order-detail-address" class="text-xs text-subtle mt-4"></p>
+          </div>
+        </div>
+      </div>
+      <p id="orders-empty" class="hidden text-center text-sm text-subtle py-12">Bạn chưa có đơn hàng nào.</p>
+      <p id="orders-loading" class="text-center text-sm text-subtle py-12">Đang tải...</p>
+    </section>
+
+    <!-- ====================== TAB: TICKET / CHAT ====================== -->
+    <section id="tab-tickets" class="hidden">
+      <div class="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-5">
+        <div id="tickets-list" class="space-y-2 md:block"></div>
+        <div id="ticket-detail-panel" class="hidden md:block bg-white border border-line rounded-2xl p-5 min-h-[300px]">
+          <button id="back-to-list-btn" class="md:hidden flex items-center gap-1 text-xs font-semibold text-brand-dark mb-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="m15 18-6-6 6-6"/></svg>
+            Quay lại danh sách
+          </button>
+          <p id="ticket-detail-placeholder" class="text-sm text-subtle text-center py-16">Chọn 1 yêu cầu bên trái để xem lại nội dung trao đổi.</p>
+          <div id="ticket-detail-content" class="hidden">
+            <div class="flex items-center justify-between mb-1">
+              <h3 id="ticket-detail-title" class="font-semibold"></h3>
+              <button id="cancel-ticket-btn" class="hidden text-xs font-semibold text-red-500 hover:underline shrink-0 ml-3">Huỷ yêu cầu</button>
+            </div>
+            <p id="ticket-detail-meta" class="text-xs text-subtle mb-4"></p>
+            <!-- Khung cuộn RIÊNG cho lịch sử tin nhắn: giới hạn chiều cao để ảnh/video
+                 đính kèm hoặc hội thoại dài không đẩy ô nhập tin nhắn khuất khỏi màn
+                 hình (trước đây không có max-height/overflow nên khung này giãn dài
+                 vô hạn, nhìn rối mắt và tưởng như không nhắn lại được). -->
+            <div id="ticket-detail-messages" class="space-y-3 max-h-[45vh] overflow-y-auto pr-1 scroll-smooth"></div>
+
+            <!-- ---- Xem trước ảnh/video TRƯỚC KHI GỬI (giống widget chat ẩn danh) ---- -->
+            <div id="ticket-attachment-preview" class="hidden border-t border-line pt-3 mt-3 flex items-center gap-3">
+              <div class="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-canvas flex items-center justify-center">
+                <img id="ticket-preview-img" class="hidden w-full h-full object-cover" alt="Xem trước ảnh" />
+                <video id="ticket-preview-video" class="hidden w-full h-full object-cover" muted></video>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p id="ticket-preview-filename" class="text-xs font-medium text-ink truncate"></p>
+                <p id="ticket-preview-hint" class="text-[11px] text-subtle">Xem lại trước khi gửi</p>
+              </div>
+              <button type="button" id="ticket-preview-cancel-btn" class="text-xs text-subtle hover:text-ink px-2 py-1 shrink-0">Huỷ</button>
+              <button type="button" id="ticket-preview-send-btn"
+                class="bg-brand hover:bg-brand-dark text-white text-xs font-medium rounded-xl px-3 py-1.5 shrink-0">Gửi</button>
+            </div>
+
+            <!-- ---- Nhắn tin tiếp: không phụ thuộc phiên chat ẩn danh (localStorage)
+                 của widget — chỉ cần đăng nhập là nhắn lại được, kể cả khi ticket
+                 đã 'closed' (sẽ tự động mở lại). ---- -->
+            <form id="ticket-reply-form" class="mt-4 pt-4 border-t border-line flex items-end gap-2 shrink-0">
+              <input id="ticket-file-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp,video/mp4,video/webm,video/quicktime" class="hidden" />
+              <button type="button" id="ticket-attach-btn" title="Gửi ảnh hoặc video"
+                class="shrink-0 w-9 h-9 rounded-xl border border-line flex items-center justify-center text-subtle hover:text-ink hover:border-brand transition-colors">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              </button>
+              <textarea id="ticket-reply-input" required rows="2" placeholder="Nhắn tin cho shop..."
+                class="flex-1 border border-line rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand"></textarea>
+              <button type="submit" id="ticket-reply-btn"
+                class="bg-brand hover:bg-brand-dark text-white text-sm font-medium rounded-xl px-4 py-2 transition-colors shrink-0">Gửi</button>
+            </form>
+            <p id="ticket-reply-error" class="hidden text-xs text-red-500 mt-1.5"></p>
+          </div>
+        </div>
+      </div>
+      <p id="tickets-empty" class="hidden text-center text-sm text-subtle py-12">Bạn chưa có yêu cầu hỗ trợ nào.</p>
+      <p id="tickets-loading" class="text-center text-sm text-subtle py-12">Đang tải...</p>
+    </section>
+  </main>
+
+  <script>
+    const CUSTOMER_TOKEN_KEY = "anna_customer_token";
+    const CUSTOMER_KEY = "anna_customer";
+    const API_BASE = "/api/v1";
+
+    const token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
+    if (!token) window.location.href = "/account";
+
+    const customer = JSON.parse(localStorage.getItem(CUSTOMER_KEY) || "null");
+    document.getElementById("customer-name-label").textContent = customer ? customer.name : "";
+
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+      localStorage.removeItem(CUSTOMER_KEY);
+      window.location.href = "/account";
+    });
+
+    async function apiFetch(path, options = {}) {
+      // QUAN TRỌNG: phải nhận & truyền tiếp "options" (method, body, headers...).
+      // Trước đây hàm này chỉ nhận mỗi "path" nên mọi lệnh gọi kèm
+      // { method: "POST", body: ... } (vd: gửi tin nhắn ở form trả lời) đều bị
+      // bỏ qua tham số thứ 2 và luôn luôn thực hiện GET mặc định — API GET đó
+      // vẫn trả 200 OK bình thường nên không báo lỗi, nhưng tin nhắn KHÔNG
+      // bao giờ được tạo. Đây là nguyên nhân khách "gõ được nhưng không gửi
+      // được" mà không thấy lỗi gì.
+      const resp = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers: { Authorization: `Bearer ${token}`, ...(options.headers || {}) },
+      });
+      if (resp.status === 401) {
+        localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+        localStorage.removeItem(CUSTOMER_KEY);
+        window.location.href = "/account";
+        throw new Error("Phiên đăng nhập hết hạn");
+      }
+      if (!resp.ok) throw new Error((await resp.json()).detail || "Lỗi tải dữ liệu");
+      return resp.json();
+    }
+
+    function formatDate(iso) {
+      return new Date(iso).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    }
+    function formatMoney(n) {
+      return Number(n).toLocaleString("vi-VN") + "đ";
+    }
+
+    const ORDER_STATUS_LABEL = { pending: "Chờ xác nhận", confirmed: "Đã xác nhận", shipping: "Đang giao", completed: "Hoàn tất", cancelled: "Đã huỷ" };
+    const ORDER_STATUS_COLOR = { pending: "bg-amber-100 text-amber-700", confirmed: "bg-blue-100 text-blue-700", shipping: "bg-indigo-100 text-indigo-700", completed: "bg-green-100 text-green-700", cancelled: "bg-red-100 text-red-500" };
+    const TICKET_STATUS_LABEL = { new: "Mới", processing: "Đang xử lý", waiting: "Chờ phản hồi", closed: "Đã đóng" };
+    // Thêm "bot" (tin nhắn chào tự động) — trước đây thiếu nên hiện "undefined"
+    // khi khách xem lại lịch sử chat có tin nhắn chào tự động gửi lúc mới tạo.
+    const SENDER_LABEL = { customer: "Bạn", agent: "Anna Store", bot: "Anna Store", system: "Hệ thống" };
+
+    // ---------------------------------------------------------------
+    // TAB SWITCHING
+    // ---------------------------------------------------------------
+    const tabOrdersBtn = document.getElementById("tab-orders-btn");
+    const tabTicketsBtn = document.getElementById("tab-tickets-btn");
+    const tabOrders = document.getElementById("tab-orders");
+    const tabTickets = document.getElementById("tab-tickets");
+
+    function activateTab(name) {
+      const isOrders = name === "orders";
+      tabOrders.classList.toggle("hidden", !isOrders);
+      tabTickets.classList.toggle("hidden", isOrders);
+      tabOrdersBtn.className = `px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${isOrders ? "bg-brand text-white" : "text-subtle"}`;
+      tabTicketsBtn.className = `px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${!isOrders ? "bg-brand text-white" : "text-subtle"}`;
+      if (isOrders) loadOrders(); else loadTickets();
+    }
+    tabOrdersBtn.addEventListener("click", () => activateTab("orders"));
+    tabTicketsBtn.addEventListener("click", () => activateTab("tickets"));
+
+    // ---------------------------------------------------------------
+    // TAB: ĐƠN HÀNG
+    // ---------------------------------------------------------------
+    let ordersLoaded = false;
+    async function loadOrders() {
+      if (ordersLoaded) return;
+      ordersLoaded = true;
+      const listEl = document.getElementById("orders-list");
+      const emptyEl = document.getElementById("orders-empty");
+      const loadingEl = document.getElementById("orders-loading");
+
+      try {
+        const orders = await apiFetch("/customer-auth/me/orders");
+        loadingEl.classList.add("hidden");
+        if (orders.length === 0) {
+          emptyEl.classList.remove("hidden");
+          return;
+        }
+        for (const order of orders) {
+          const item = document.createElement("button");
+          item.className = "w-full text-left bg-white border border-line rounded-xl p-3 hover:border-brand transition-colors";
+          item.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm font-semibold">Đơn #${order.id}</span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${ORDER_STATUS_COLOR[order.status] || "bg-gray-100 text-gray-600"}">${ORDER_STATUS_LABEL[order.status] || order.status}</span>
+            </div>
+            <p class="text-xs text-subtle mt-1">${formatDate(order.created_at)} · ${formatMoney(order.total_amount)}</p>
+          `;
+          item.addEventListener("click", () => {
+            showOrderDetail(order);
+            // Trên di động (1 cột): chuyển hẳn sang khung chi tiết, ẩn danh
+            // sách đi — không ảnh hưởng desktop vì "md:block" luôn ép hiện.
+            document.getElementById("orders-list").classList.add("hidden");
+            document.getElementById("order-detail-panel").classList.remove("hidden");
+          });
+          listEl.appendChild(item);
+        }
+      } catch (err) {
+        loadingEl.textContent = err.message;
+      }
+    }
+
+    document.getElementById("back-to-orders-list-btn").addEventListener("click", () => {
+      // Chỉ có tác dụng thấy được trên di động (nút tự ẩn ở desktop qua
+      // class "md:hidden") — quay lại xem danh sách, khung chi tiết ẩn tạm.
+      document.getElementById("order-detail-panel").classList.add("hidden");
+      document.getElementById("orders-list").classList.remove("hidden");
+    });
+
+    function showOrderDetail(order) {
+      document.getElementById("order-detail-placeholder").classList.add("hidden");
+      document.getElementById("order-detail-content").classList.remove("hidden");
+
+      document.getElementById("order-detail-title").textContent = `Đơn #${order.id}`;
+      document.getElementById("order-detail-meta").textContent = `Đặt lúc ${formatDate(order.created_at)}`;
+
+      const statusEl = document.getElementById("order-detail-status");
+      statusEl.textContent = ORDER_STATUS_LABEL[order.status] || order.status;
+      statusEl.className = `text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ml-3 ${ORDER_STATUS_COLOR[order.status] || "bg-gray-100 text-gray-600"}`;
+
+      const itemsEl = document.getElementById("order-detail-items");
+      itemsEl.innerHTML = "";
+      for (const it of order.items) {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between text-sm";
+        row.innerHTML = `
+          <span class="text-subtle">${it.quantity}x ${it.product_variant.product_name} <span class="text-xs">(${it.product_variant.size}/${it.product_variant.color})</span></span>
+          <span class="font-medium shrink-0 ml-3">${formatMoney(it.unit_price * it.quantity)}</span>
+        `;
+        itemsEl.appendChild(row);
+      }
+
+      document.getElementById("order-detail-total").textContent = formatMoney(order.total_amount);
+      document.getElementById("order-detail-address").textContent = order.shipping_address
+        ? `Giao đến: ${order.shipping_address}`
+        : "";
+    }
+
+    // ---------------------------------------------------------------
+    // TAB: TICKET / CHAT
+    // ---------------------------------------------------------------
+    let ticketsLoaded = false;
+    async function loadTickets() {
+      if (ticketsLoaded) return;
+      ticketsLoaded = true;
+      const listEl = document.getElementById("tickets-list");
+      const emptyEl = document.getElementById("tickets-empty");
+      const loadingEl = document.getElementById("tickets-loading");
+
+      try {
+        const tickets = await apiFetch("/customer-auth/me/tickets");
+        loadingEl.classList.add("hidden");
+        if (tickets.length === 0) {
+          emptyEl.classList.remove("hidden");
+          return;
+        }
+        for (const ticket of tickets) {
+          const item = document.createElement("button");
+          item.className = "w-full text-left bg-white border border-line rounded-xl p-3 hover:border-brand transition-colors";
+          item.innerHTML = `
+            <p class="text-sm font-semibold truncate">${ticket.title}</p>
+            <p class="text-xs text-subtle mt-1">${TICKET_STATUS_LABEL[ticket.status] || ticket.status} · ${formatDate(ticket.created_at)}</p>
+          `;
+          item.addEventListener("click", () => {
+            showTicketDetail(ticket);
+            // Trên di động (1 cột): chuyển hẳn sang khung chat, ẩn danh sách đi
+            // — không ảnh hưởng desktop vì "md:block" luôn ép hiện ở màn rộng.
+            document.getElementById("tickets-list").classList.add("hidden");
+            document.getElementById("ticket-detail-panel").classList.remove("hidden");
+          });
+          listEl.appendChild(item);
+        }
+      } catch (err) {
+        loadingEl.textContent = err.message;
+      }
+    }
+
+let currentTicketId = null;
+
+document.getElementById("back-to-list-btn").addEventListener("click", () => {
+  // Chỉ có tác dụng thấy được trên di động (nút này tự ẩn ở desktop qua
+  // class "md:hidden") — quay lại xem danh sách, khung chat ẩn đi tạm thời.
+  document.getElementById("ticket-detail-panel").classList.add("hidden");
+  document.getElementById("tickets-list").classList.remove("hidden");
+});
+
+document.getElementById("cancel-ticket-btn").addEventListener("click", async () => {
+  if (!currentTicketId) return;
+  if (!confirm("Bạn chắc chắn muốn huỷ yêu cầu hỗ trợ này?")) return;
+
+  try {
+    await fetch(`${API_BASE}/customer-auth/me/tickets/${currentTicketId}/cancel`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(async (r) => {
+      if (!r.ok) throw new Error((await r.json()).detail || "Không huỷ được yêu cầu này");
+    });
+    ticketsLoaded = false; // buộc tải lại danh sách để cập nhật trạng thái
+    document.getElementById("tickets-list").innerHTML = "";
+    document.getElementById("tickets-empty").classList.add("hidden");
+    await loadTickets();
+    // Tải lại chi tiết để nút Huỷ tự ẩn đi (đã đóng) và refresh trạng thái hiển thị.
+    const refreshed = await apiFetch(`/customer-auth/me/tickets`);
+    const updated = refreshed.find((t) => t.id === currentTicketId);
+    if (updated) showTicketDetail(updated);
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+async function deleteMyMessage(ticketId, interactionId) {
+  if (!confirm("Xoá tin nhắn này?")) return;
+  try {
+    const resp = await fetch(`${API_BASE}/customer-auth/me/tickets/${ticketId}/interactions/${interactionId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!resp.ok) throw new Error((await resp.json()).detail || "Không xoá được tin nhắn");
+    await showTicketDetail({ id: ticketId, title: document.getElementById("ticket-detail-title").textContent, status: currentTicketStatus, created_at: currentTicketCreatedAt });
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function saveEditedMessage(ticketId, interactionId, newContent) {
+  try {
+    const resp = await fetch(`${API_BASE}/customer-auth/me/tickets/${ticketId}/interactions/${interactionId}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ content: newContent }),
+    });
+    if (!resp.ok) throw new Error((await resp.json()).detail || "Không lưu được thay đổi");
+    await showTicketDetail({ id: ticketId, title: document.getElementById("ticket-detail-title").textContent, status: currentTicketStatus, created_at: currentTicketCreatedAt });
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+let currentTicketStatus = null;
+let currentTicketCreatedAt = null;
+
+async function showTicketDetail(ticket) {
+  // Đóng khung xem trước ảnh/video (nếu đang mở) mỗi khi chuyển/tải lại ticket,
+  // tránh còn sót ảnh xem trước của ticket cũ khi khách bấm sang ticket khác.
+  clearPendingTicketAttachment();
+  currentTicketId = ticket.id;
+  currentTicketStatus = ticket.status;
+  currentTicketCreatedAt = ticket.created_at;
+
+  document.getElementById("ticket-detail-placeholder").classList.add("hidden");
+  const contentEl = document.getElementById("ticket-detail-content");
+  contentEl.classList.remove("hidden");
+
+  document.getElementById("ticket-detail-title").textContent = ticket.title;
+  document.getElementById("ticket-detail-meta").textContent =
+    `${TICKET_STATUS_LABEL[ticket.status] || ticket.status} · Tạo lúc ${formatDate(ticket.created_at)}`;
+
+  const cancelBtn = document.getElementById("cancel-ticket-btn");
+  cancelBtn.classList.toggle("hidden", ticket.status === "closed");
+
+  const messagesEl = document.getElementById("ticket-detail-messages");
+  messagesEl.innerHTML = '<p class="text-sm text-subtle">Đang tải...</p>';
+
+  try {
+    const interactions = await apiFetch(`/customer-auth/me/tickets/${ticket.id}/interactions`);
+    messagesEl.innerHTML = "";
+    for (const item of interactions) {
+      // Backend đã lọc bỏ tin nhắn "system" trước khi trả về, nhưng vẫn
+      // bỏ qua phòng hờ để không lộ log nội bộ cho khách hàng.
+      if (item.sender_type === "system") continue;
+      const isCustomer = item.sender_type === "customer";
+
+      // Quy ước chat chuẩn (giống widget chat ẩn danh): tin nhắn của CHÍNH
+      // khách (isCustomer) nằm BÊN PHẢI, tin nhắn của shop/agent nằm bên
+      // trái. Trước đây 2 vế bị gán ngược (customer trái, agent phải) khiến
+      // khung chat nhìn rối và gây hiểu lầm "ai đang nhắn gì".
+      const wrapper = document.createElement("div");
+      wrapper.className = `max-w-[80%] ${isCustomer ? "ml-auto" : ""}`;
+
+      const bubble = document.createElement("div");
+      bubble.className = `rounded-2xl px-4 py-2.5 text-sm ${isCustomer ? "bg-brand text-white" : "bg-canvas"}`;
+      if (item.attachment_url) {
+        bubble.classList.add("p-1.5");
+        if (item.attachment_type === "video") {
+          const video = document.createElement("video");
+          video.src = item.attachment_url;
+          video.controls = true;
+          video.className = "max-w-[240px] max-h-[240px] rounded-xl";
+          bubble.appendChild(video);
+        } else {
+          const img = document.createElement("img");
+          img.src = item.attachment_url;
+          img.alt = item.attachment_filename || "Hình ảnh đính kèm";
+          img.className = "max-w-[220px] max-h-[220px] rounded-xl cursor-pointer";
+          img.addEventListener("click", () => window.open(item.attachment_url, "_blank"));
+          bubble.appendChild(img);
+        }
+      } else {
+        bubble.textContent = item.content;
+      }
+
+      const meta = document.createElement("p");
+      meta.className = `text-[11px] text-subtle mt-1 flex items-center gap-2 ${isCustomer ? "text-right justify-end" : ""}`;
+      const metaText = document.createElement("span");
+      metaText.textContent = `${SENDER_LABEL[item.sender_type]} · ${formatDate(item.created_at)}`;
+      meta.appendChild(metaText);
+
+      // Chỉ cho sửa/xoá tin nhắn DẠNG CHỮ do chính khách gửi (không áp dụng
+      // cho ảnh/video đính kèm — sửa nội dung media không có ý nghĩa ở đây).
+      if (isCustomer && !item.attachment_url) {
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Sửa";
+        editBtn.className = "text-brand-dark hover:underline";
+        editBtn.addEventListener("click", () => enterEditMode(wrapper, bubble, item, ticket.id));
+        meta.appendChild(editBtn);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Xoá";
+        deleteBtn.className = "text-red-500 hover:underline";
+        deleteBtn.addEventListener("click", () => deleteMyMessage(ticket.id, item.id));
+        meta.appendChild(deleteBtn);
+      }
+
+      wrapper.appendChild(bubble);
+      wrapper.appendChild(meta);
+      messagesEl.appendChild(wrapper);
+    }
+    // Cuộn xuống tin nhắn mới nhất trong khung tin nhắn (không cuộn cả trang),
+    // để khách luôn thấy ngay ô nhập tin nhắn bên dưới thay vì phải tự kéo qua
+    // hết ảnh/video đính kèm phía trên.
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  } catch (err) {
+    messagesEl.innerHTML = `<p class="text-sm text-red-500">${err.message}</p>`;
+  }
+}
+
+// ---- Nhắn tin tiếp (không phụ thuộc phiên chat ẩn danh của widget) ----
+document.getElementById("ticket-reply-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = document.getElementById("ticket-reply-input");
+  const errorEl = document.getElementById("ticket-reply-error");
+  const btn = document.getElementById("ticket-reply-btn");
+  const content = input.value.trim();
+  if (!content || !currentTicketId) return;
+
+  errorEl.classList.add("hidden");
+  btn.disabled = true;
+  try {
+    await apiFetch(`/customer-auth/me/tickets/${currentTicketId}/interactions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    input.value = "";
+    // Backend tự động mở lại ticket 'closed' -> 'new' khi khách nhắn tiếp.
+    // Chỉ cần cập nhật trạng thái này tại chỗ, KHÔNG cần tải lại toàn bộ
+    // danh sách ticket (trước đây gọi thêm /customer-auth/me/tickets ở đây,
+    // vừa dư thừa vừa làm mỗi lần gửi tin nhắn bị chậm/giật thấy rõ). Danh
+    // sách sẽ tự cập nhật đúng khi khách quay lại xem nó (ticketsLoaded=false).
+    if (currentTicketStatus === "closed") {
+      currentTicketStatus = "new";
+      ticketsLoaded = false;
+    }
+    await showTicketDetail({ id: currentTicketId, title: document.getElementById("ticket-detail-title").textContent, status: currentTicketStatus, created_at: currentTicketCreatedAt });
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function enterEditMode(wrapper, bubble, item, ticketId) {
+  const originalContent = item.content;
+  bubble.innerHTML = "";
+
+  const textarea = document.createElement("textarea");
+  textarea.className = "w-full text-sm bg-white border border-line rounded-lg px-2 py-1.5 outline-none focus:border-brand";
+  textarea.value = originalContent;
+  textarea.rows = 2;
+  bubble.appendChild(textarea);
+
+  const actionsRow = document.createElement("div");
+  actionsRow.className = "flex gap-3 mt-1.5 text-[11px]";
+
+  const saveBtn = document.createElement("button");
+  saveBtn.textContent = "Lưu";
+  saveBtn.className = "text-brand-dark font-semibold hover:underline";
+  saveBtn.addEventListener("click", () => saveEditedMessage(ticketId, item.id, textarea.value.trim()));
+
+  const cancelEditBtn = document.createElement("button");
+  cancelEditBtn.textContent = "Huỷ";
+  cancelEditBtn.className = "text-subtle hover:underline";
+  cancelEditBtn.addEventListener("click", () => {
+    bubble.textContent = originalContent;
+  });
+
+  actionsRow.appendChild(saveBtn);
+  actionsRow.appendChild(cancelEditBtn);
+  bubble.appendChild(actionsRow);
+}
+
+// ---- Gửi kèm ảnh/video vào ticket đang xem (giống widget chat ẩn danh) ----
+// Luồng: chọn file -> CHỈ xem trước (chưa gửi) -> bấm nút gửi trong khung xem
+// trước mới thực sự upload lên server.
+const MAX_IMAGE_MB = 10;
+const MAX_VIDEO_MB = 50;
+
+let pendingTicketAttachment = null; // { file, previewUrl } hoặc null nếu chưa chọn gì
+
+const ticketAttachmentPreviewBar = document.getElementById("ticket-attachment-preview");
+const ticketPreviewImg = document.getElementById("ticket-preview-img");
+const ticketPreviewVideo = document.getElementById("ticket-preview-video");
+const ticketPreviewFilename = document.getElementById("ticket-preview-filename");
+const ticketPreviewHint = document.getElementById("ticket-preview-hint");
+const ticketPreviewSendBtn = document.getElementById("ticket-preview-send-btn");
+const ticketPreviewCancelBtn = document.getElementById("ticket-preview-cancel-btn");
+
+function clearPendingTicketAttachment() {
+  if (pendingTicketAttachment) URL.revokeObjectURL(pendingTicketAttachment.previewUrl);
+  pendingTicketAttachment = null;
+  ticketAttachmentPreviewBar.classList.add("hidden");
+  ticketPreviewImg.classList.add("hidden");
+  ticketPreviewVideo.classList.add("hidden");
+  ticketPreviewVideo.src = "";
+  document.getElementById("ticket-file-input").value = ""; // cho phép chọn lại cùng 1 file lần sau
+}
+
+document.getElementById("ticket-attach-btn").addEventListener("click", () => {
+  document.getElementById("ticket-file-input").click();
+});
+
+document.getElementById("ticket-file-input").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const isVideo = file.type.startsWith("video/");
+  const limitMb = isVideo ? MAX_VIDEO_MB : MAX_IMAGE_MB;
+  if (file.size > limitMb * 1024 * 1024) {
+    alert(`File vượt quá giới hạn ${limitMb}MB cho ${isVideo ? "video" : "ảnh"}.`);
+    e.target.value = "";
+    return;
+  }
+
+  if (pendingTicketAttachment) URL.revokeObjectURL(pendingTicketAttachment.previewUrl);
+  const previewUrl = URL.createObjectURL(file);
+  pendingTicketAttachment = { file, previewUrl };
+
+  if (isVideo) {
+    ticketPreviewVideo.src = previewUrl;
+    ticketPreviewVideo.classList.remove("hidden");
+    ticketPreviewImg.classList.add("hidden");
+  } else {
+    ticketPreviewImg.src = previewUrl;
+    ticketPreviewImg.classList.remove("hidden");
+    ticketPreviewVideo.classList.add("hidden");
+  }
+  ticketPreviewFilename.textContent = file.name;
+  ticketPreviewHint.textContent = "Xem lại trước khi gửi";
+  ticketAttachmentPreviewBar.classList.remove("hidden");
+});
+
+ticketPreviewCancelBtn.addEventListener("click", () => {
+  clearPendingTicketAttachment();
+});
+
+ticketPreviewSendBtn.addEventListener("click", async () => {
+  if (!pendingTicketAttachment || !currentTicketId) return;
+
+  ticketPreviewSendBtn.disabled = true;
+  ticketPreviewCancelBtn.disabled = true;
+  ticketPreviewHint.textContent = "Đang gửi...";
+  try {
+    const formData = new FormData();
+    formData.append("file", pendingTicketAttachment.file);
+
+    const response = await fetch(`${API_BASE}/customer-auth/me/tickets/${currentTicketId}/attachments`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData, // KHÔNG set Content-Type thủ công — browser tự thêm boundary đúng cho multipart
+    });
+    if (!response.ok) {
+      let detail = `Lỗi ${response.status}`;
+      try { detail = (await response.json()).detail || detail; } catch (_) {}
+      throw new Error(detail);
+    }
+    // Backend tự mở lại ticket 'closed' -> 'new' khi có file mới, giống tin nhắn chữ.
+    if (currentTicketStatus === "closed") {
+      currentTicketStatus = "new";
+      ticketsLoaded = false;
+    }
+    clearPendingTicketAttachment();
+    await showTicketDetail({ id: currentTicketId, title: document.getElementById("ticket-detail-title").textContent, status: currentTicketStatus, created_at: currentTicketCreatedAt });
+  } catch (err) {
+    alert(err.message);
+    ticketPreviewHint.textContent = "Xem lại trước khi gửi";
+  } finally {
+    ticketPreviewSendBtn.disabled = false;
+    ticketPreviewCancelBtn.disabled = false;
+  }
+});
+
+    // ---------------------------------------------------------------
+    // INIT
+    // ---------------------------------------------------------------
+    loadOrders();
+  </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Đăng nhập — Anna Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Quicksand:wght@600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: "#1C3A57",
+          subtle: "#5F7D95",
+          canvas: "#EAF6FF",
+          line: "#D9ECF8",
+          brand: { DEFAULT: "#4FA9E0", dark: "#2F7FBD", light: "#EAF3FD" },
+          status: { new: "#3B6FE0", processing: "#C08A1E", waiting: "#8B5CF6", closed: "#6B7280" },
+          priority: { low: "#6B7280", medium: "#C08A1E", high: "#DC4C3F" },
+        },
+        fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"], display: ["Quicksand", "ui-sans-serif", "system-ui"] },
+      },
+    },
+  };
+</script>
+<link rel="stylesheet" href="/static/css/custom.css" />
+</head>
+<body class="bg-canvas font-sans text-ink min-h-screen flex items-center justify-center px-4" style="background-image: radial-gradient(900px 500px at 85% -10%, #d3ecfb 0%, transparent 60%), radial-gradient(700px 420px at -10% 110%, #d3ecfb 0%, transparent 55%);">
+
+  <div class="w-full max-w-sm">
+    <div class="mb-8 flex items-center gap-2.5">
+      <span class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background: linear-gradient(145deg, #7ec4ec, #2f7fbd);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      </span>
+      <span class="font-display font-bold text-lg text-ink">Anna Store</span>
+    </div>
+
+    <div class="bg-white border border-line rounded-2xl p-8 shadow-[0_20px_45px_-25px_rgba(47,127,189,0.45)]">
+      <h1 class="font-display font-bold text-xl mb-1">Chào mừng trở lại</h1>
+      <p class="text-sm text-subtle mb-6">Đăng nhập bằng tài khoản nhân viên để vào hệ thống.</p>
+
+      <form id="login-form" class="space-y-4" novalidate>
+        <div>
+          <label for="email" class="block text-sm font-medium mb-1">Email</label>
+          <input
+            id="email" type="email" required autocomplete="username"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand"
+            placeholder="ban@congty.com"
+          />
+        </div>
+        <div>
+          <label for="password" class="block text-sm font-medium mb-1">Mật khẩu</label>
+          <input
+            id="password" type="password" required autocomplete="current-password"
+            class="w-full border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand"
+          />
+        </div>
+
+        <p id="error-msg" class="text-sm text-priority-high hidden"></p>
+
+        <button
+          type="submit" id="submit-btn"
+          class="w-full bg-brand hover:bg-brand-dark text-white text-sm font-medium rounded-xl py-2 transition-colors"
+        >
+          Đăng nhập
+        </button>
+      </form>
+    </div>
+
+    <p class="text-xs text-subtle mt-4">
+      Tài khoản mặc định (lần đầu): <span class="font-medium">admin@example.com / admin123</span>
+    </p>
+
+    <p class="text-center text-xs text-subtle mt-4">
+      <a href="/" class="hover:underline">← Về trang chào</a>
+    </p>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script>
+    // Nếu đã đăng nhập rồi thì vào thẳng dashboard.
+    if (getToken()) window.location.href = "/dashboard";
+
+    const form = document.getElementById("login-form");
+    const errorEl = document.getElementById("error-msg");
+    const submitBtn = document.getElementById("submit-btn");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      errorEl.classList.add("hidden");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Đang đăng nhập...";
+
+      try {
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+
+        // Endpoint /auth/login dùng OAuth2PasswordRequestForm -> phải gửi form-urlencoded,
+        // không phải JSON, nên gọi fetch trực tiếp thay vì dùng apiFetch() ở đây.
+        const body = new URLSearchParams();
+        body.set("username", email);
+        body.set("password", password);
+
+        const tokenResp = await fetch(`${API_BASE}/auth/login`, { method: "POST", body });
+        if (!tokenResp.ok) {
+          const data = await tokenResp.json().catch(() => ({}));
+          throw new Error(data.detail || "Email hoặc mật khẩu không đúng.");
+        }
+        const { access_token } = await tokenResp.json();
+        localStorage.setItem(TOKEN_KEY, access_token);
+
+        const me = await apiFetch("/auth/me");
+        localStorage.setItem(USER_KEY, JSON.stringify(me));
+
+        window.location.href = "/dashboard";
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove("hidden");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Đăng nhập";
+      }
+    });
+  </script>
+</body>
+</html>
