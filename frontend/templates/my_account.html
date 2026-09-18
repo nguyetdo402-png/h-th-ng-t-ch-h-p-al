@@ -99,7 +99,22 @@
               <button id="cancel-ticket-btn" class="hidden text-xs font-semibold text-red-500 hover:underline shrink-0 ml-3">Huỷ yêu cầu</button>
             </div>
             <p id="ticket-detail-meta" class="text-xs text-subtle mb-4"></p>
-            <div id="ticket-detail-messages" class="space-y-3"></div>
+            <!-- Khung cuộn RIÊNG cho lịch sử tin nhắn: giới hạn chiều cao để ảnh/video
+                 đính kèm hoặc hội thoại dài không đẩy ô nhập tin nhắn khuất khỏi màn
+                 hình (trước đây không có max-height/overflow nên khung này giãn dài
+                 vô hạn, nhìn rối mắt và tưởng như không nhắn lại được). -->
+            <div id="ticket-detail-messages" class="space-y-3 max-h-[45vh] overflow-y-auto pr-1 scroll-smooth"></div>
+
+            <!-- ---- Nhắn tin tiếp: không phụ thuộc phiên chat ẩn danh (localStorage)
+                 của widget — chỉ cần đăng nhập là nhắn lại được, kể cả khi ticket
+                 đã 'closed' (sẽ tự động mở lại). ---- -->
+            <form id="ticket-reply-form" class="mt-4 pt-4 border-t border-line flex items-end gap-2 shrink-0">
+              <textarea id="ticket-reply-input" required rows="2" placeholder="Nhắn tin cho shop..."
+                class="flex-1 border border-line rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand"></textarea>
+              <button type="submit" id="ticket-reply-btn"
+                class="bg-brand hover:bg-brand-dark text-white text-sm font-medium rounded-xl px-4 py-2 transition-colors shrink-0">Gửi</button>
+            </form>
+            <p id="ticket-reply-error" class="hidden text-xs text-red-500 mt-1.5"></p>
           </div>
         </div>
       </div>
@@ -125,9 +140,17 @@
       window.location.href = "/account";
     });
 
-    async function apiFetch(path) {
+    async function apiFetch(path, options = {}) {
+      // QUAN TRỌNG: phải nhận & truyền tiếp "options" (method, body, headers...).
+      // Trước đây hàm này chỉ nhận mỗi "path" nên mọi lệnh gọi kèm
+      // { method: "POST", body: ... } (vd: gửi tin nhắn ở form trả lời) đều bị
+      // bỏ qua tham số thứ 2 và luôn luôn thực hiện GET mặc định — API GET đó
+      // vẫn trả 200 OK bình thường nên không báo lỗi, nhưng tin nhắn KHÔNG
+      // bao giờ được tạo. Đây là nguyên nhân khách "gõ được nhưng không gửi
+      // được" mà không thấy lỗi gì.
       const resp = await fetch(`${API_BASE}${path}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        ...options,
+        headers: { Authorization: `Bearer ${token}`, ...(options.headers || {}) },
       });
       if (resp.status === 401) {
         localStorage.removeItem(CUSTOMER_TOKEN_KEY);
@@ -379,11 +402,15 @@ async function showTicketDetail(ticket) {
       if (item.sender_type === "system") continue;
       const isCustomer = item.sender_type === "customer";
 
+      // Quy ước chat chuẩn (giống widget chat ẩn danh): tin nhắn của CHÍNH
+      // khách (isCustomer) nằm BÊN PHẢI, tin nhắn của shop/agent nằm bên
+      // trái. Trước đây 2 vế bị gán ngược (customer trái, agent phải) khiến
+      // khung chat nhìn rối và gây hiểu lầm "ai đang nhắn gì".
       const wrapper = document.createElement("div");
-      wrapper.className = `max-w-[80%] ${isCustomer ? "" : "ml-auto"}`;
+      wrapper.className = `max-w-[80%] ${isCustomer ? "ml-auto" : ""}`;
 
       const bubble = document.createElement("div");
-      bubble.className = `rounded-2xl px-4 py-2.5 text-sm ${isCustomer ? "bg-canvas" : "bg-brand-light"}`;
+      bubble.className = `rounded-2xl px-4 py-2.5 text-sm ${isCustomer ? "bg-brand text-white" : "bg-canvas"}`;
       if (item.attachment_url) {
         bubble.classList.add("p-1.5");
         if (item.attachment_type === "video") {
@@ -405,7 +432,7 @@ async function showTicketDetail(ticket) {
       }
 
       const meta = document.createElement("p");
-      meta.className = `text-[11px] text-subtle mt-1 flex items-center gap-2 ${isCustomer ? "" : "text-right justify-end"}`;
+      meta.className = `text-[11px] text-subtle mt-1 flex items-center gap-2 ${isCustomer ? "text-right justify-end" : ""}`;
       const metaText = document.createElement("span");
       metaText.textContent = `${SENDER_LABEL[item.sender_type]} · ${formatDate(item.created_at)}`;
       meta.appendChild(metaText);
@@ -430,10 +457,50 @@ async function showTicketDetail(ticket) {
       wrapper.appendChild(meta);
       messagesEl.appendChild(wrapper);
     }
+    // Cuộn xuống tin nhắn mới nhất trong khung tin nhắn (không cuộn cả trang),
+    // để khách luôn thấy ngay ô nhập tin nhắn bên dưới thay vì phải tự kéo qua
+    // hết ảnh/video đính kèm phía trên.
+    messagesEl.scrollTop = messagesEl.scrollHeight;
   } catch (err) {
     messagesEl.innerHTML = `<p class="text-sm text-red-500">${err.message}</p>`;
   }
 }
+
+// ---- Nhắn tin tiếp (không phụ thuộc phiên chat ẩn danh của widget) ----
+document.getElementById("ticket-reply-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = document.getElementById("ticket-reply-input");
+  const errorEl = document.getElementById("ticket-reply-error");
+  const btn = document.getElementById("ticket-reply-btn");
+  const content = input.value.trim();
+  if (!content || !currentTicketId) return;
+
+  errorEl.classList.add("hidden");
+  btn.disabled = true;
+  try {
+    await apiFetch(`/customer-auth/me/tickets/${currentTicketId}/interactions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    input.value = "";
+    // Backend tự động mở lại ticket 'closed' -> 'new' khi khách nhắn tiếp.
+    // Chỉ cần cập nhật trạng thái này tại chỗ, KHÔNG cần tải lại toàn bộ
+    // danh sách ticket (trước đây gọi thêm /customer-auth/me/tickets ở đây,
+    // vừa dư thừa vừa làm mỗi lần gửi tin nhắn bị chậm/giật thấy rõ). Danh
+    // sách sẽ tự cập nhật đúng khi khách quay lại xem nó (ticketsLoaded=false).
+    if (currentTicketStatus === "closed") {
+      currentTicketStatus = "new";
+      ticketsLoaded = false;
+    }
+    await showTicketDetail({ id: currentTicketId, title: document.getElementById("ticket-detail-title").textContent, status: currentTicketStatus, created_at: currentTicketCreatedAt });
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 function enterEditMode(wrapper, bubble, item, ticketId) {
   const originalContent = item.content;

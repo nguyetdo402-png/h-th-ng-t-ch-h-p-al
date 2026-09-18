@@ -17,19 +17,39 @@ from app.models.ticket import Ticket, TicketPriority, TicketStatus
 from app.models.user import User, UserRole
 
 
-def get_overview_stats(db: Session) -> dict:
-    """Tổng số ticket/khách hàng, và phân bổ ticket theo trạng thái + mức ưu tiên."""
-    total_tickets = db.query(func.count(Ticket.id)).scalar() or 0
+def get_overview_stats(db: Session, assigned_to_agent_id: int | None = None) -> dict:
+    """
+    Tổng số ticket/khách hàng, và phân bổ ticket theo trạng thái + mức ưu tiên.
+
+    assigned_to_agent_id: nếu truyền vào (agent xem trang của chính mình), chỉ
+    tính trên các ticket đang được gán cho agent đó — đồng bộ với cách
+    list_tickets/get_priority_queue giới hạn phạm vi cho agent. None (mặc định,
+    dùng cho admin/manager) nghĩa là tính trên toàn bộ ticket.
+    """
+    ticket_query = db.query(Ticket)
+    if assigned_to_agent_id is not None:
+        ticket_query = ticket_query.filter(Ticket.assigned_to_agent_id == assigned_to_agent_id)
+
+    total_tickets = ticket_query.with_entities(func.count(Ticket.id)).scalar() or 0
+
+    # total_customers luôn tính toàn hệ thống — số ticket bị lọc theo agent
+    # không đồng nghĩa với "số khách hàng của agent đó".
     total_customers = db.query(func.count(Customer.id)).scalar() or 0
 
     # Khởi tạo sẵn tất cả giá trị enum = 0, để FE không phải tự xử lý key bị thiếu
     # (ví dụ chưa có ticket "waiting" nào thì vẫn trả về waiting: 0 thay vì bỏ qua key).
     by_status = {s.value: 0 for s in TicketStatus}
-    for status_value, count in db.query(Ticket.status, func.count(Ticket.id)).group_by(Ticket.status).all():
+    status_counts_query = ticket_query.with_entities(Ticket.status, func.count(Ticket.id)).group_by(
+        Ticket.status
+    )
+    for status_value, count in status_counts_query.all():
         by_status[status_value.value] = count
 
     by_priority = {p.value: 0 for p in TicketPriority}
-    for priority_value, count in db.query(Ticket.priority, func.count(Ticket.id)).group_by(Ticket.priority).all():
+    priority_counts_query = ticket_query.with_entities(
+        Ticket.priority, func.count(Ticket.id)
+    ).group_by(Ticket.priority)
+    for priority_value, count in priority_counts_query.all():
         by_priority[priority_value.value] = count
 
     total_open_tickets = total_tickets - by_status.get(TicketStatus.CLOSED.value, 0)

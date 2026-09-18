@@ -19,7 +19,7 @@ from app.models.customer import Customer
 from app.models.interaction_history import SenderType
 from app.schemas.customer import CustomerOut
 from app.schemas.customer_auth import CustomerLoginRequest, CustomerRegister, CustomerToken
-from app.schemas.interaction_history import InteractionOut, InteractionUpdate
+from app.schemas.interaction_history import InteractionCreate, InteractionOut, InteractionUpdate
 from app.schemas.order import OrderDetailOut
 from app.schemas.ticket import TicketOut
 from app.services import interaction_service, order_service, ticket_service
@@ -118,6 +118,28 @@ def cancel_my_ticket(
 ):
     """Khách hàng tự huỷ yêu cầu hỗ trợ của chính mình (chuyển sang 'closed')."""
     return ticket_service.cancel_ticket_by_customer(db, ticket_id, current_customer.id)
+
+
+@router.post(
+    "/me/tickets/{ticket_id}/interactions",
+    response_model=InteractionOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def send_my_message(
+    ticket_id: int,
+    payload: InteractionCreate,
+    db: Session = Depends(get_db),
+    current_customer: Customer = Depends(get_current_customer),
+):
+    """
+    Khách hàng ĐÃ ĐĂNG NHẬP gửi thêm tin nhắn vào ticket của chính mình, dùng
+    ở trang "Tài khoản của tôi" — lối đi thay thế cho widget chat ẩn danh
+    (vốn dựa vào access_token lưu ở localStorage, dễ mất khi khách đóng
+    tab/trình duyệt). Nếu ticket đang 'closed', tự động mở lại (về 'new').
+    """
+    return interaction_service.create_message_by_customer(
+        db, ticket_id, current_customer.id, payload
+    )
 
 
 @router.put(

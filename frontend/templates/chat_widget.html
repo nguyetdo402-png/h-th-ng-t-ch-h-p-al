@@ -103,6 +103,22 @@
 
       <div id="chat-messages" class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3" style="background:#eaf6ff;"></div>
 
+      <!-- ---- Xem trước ảnh/video TRƯỚC KHI GỬI (giống Messenger) ---- -->
+      <div id="chat-attachment-preview" class="hidden border-t border-line bg-white px-3 py-2.5 flex items-center gap-3">
+        <div class="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-canvas flex items-center justify-center">
+          <img id="preview-img" class="hidden w-full h-full object-cover" alt="Xem trước ảnh" />
+          <video id="preview-video" class="hidden w-full h-full object-cover" muted></video>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p id="preview-filename" class="text-xs font-medium text-ink truncate"></p>
+          <p id="preview-hint" class="text-[11px] text-subtle">Xem lại trước khi gửi</p>
+        </div>
+        <button type="button" id="preview-cancel-btn" class="text-xs text-subtle hover:text-ink px-2 py-1 shrink-0">Huỷ</button>
+        <button type="button" id="preview-send-btn" class="cw-send-btn shrink-0" aria-label="Gửi ảnh/video">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="m3 3 18 9-18 9 4.5-9L3 3Z"/></svg>
+        </button>
+      </div>
+
       <form id="chat-form" class="border-t border-line bg-white p-3 flex items-center gap-2.5">
         <input id="chat-file-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp,video/mp4,video/webm,video/quicktime" class="hidden" />
         <button type="button" id="chat-attach-btn" class="cw-attach-btn" aria-label="Gửi ảnh/video" title="Gửi ảnh hoặc video">
@@ -418,40 +434,89 @@ document.getElementById("chat-form").addEventListener("submit", async (e) => {
 document.getElementById("new-chat-btn").addEventListener("click", () => {
   if (pollTimer) clearInterval(pollTimer);
   clearSession();
+  clearPendingAttachment();
   document.getElementById("start-form").reset();
   document.getElementById("view-chat").classList.add("hidden");
   document.getElementById("view-start").classList.remove("hidden");
 });
 
 // ---- Gửi kèm ảnh/video trong hội thoại đang mở ----
+// Luồng: chọn file -> CHỈ xem trước (chưa gửi) -> bấm nút gửi trong khung xem
+// trước mới thực sự upload lên server (giống Messenger), thay vì tự gửi ngay
+// khi vừa chọn file như trước đây.
 const MAX_IMAGE_MB = 10;
 const MAX_VIDEO_MB = 50;
+
+let pendingAttachment = null; // { file, previewUrl } hoặc null nếu chưa chọn gì
+
+const attachmentPreviewBar = document.getElementById("chat-attachment-preview");
+const previewImg = document.getElementById("preview-img");
+const previewVideo = document.getElementById("preview-video");
+const previewFilename = document.getElementById("preview-filename");
+const previewHint = document.getElementById("preview-hint");
+const previewSendBtn = document.getElementById("preview-send-btn");
+const previewCancelBtn = document.getElementById("preview-cancel-btn");
+
+function clearPendingAttachment() {
+  if (pendingAttachment) URL.revokeObjectURL(pendingAttachment.previewUrl);
+  pendingAttachment = null;
+  attachmentPreviewBar.classList.add("hidden");
+  previewImg.classList.add("hidden");
+  previewVideo.classList.add("hidden");
+  previewVideo.src = "";
+  document.getElementById("chat-file-input").value = ""; // cho phép chọn lại cùng 1 file lần sau
+}
 
 document.getElementById("chat-attach-btn").addEventListener("click", () => {
   document.getElementById("chat-file-input").click();
 });
 
-document.getElementById("chat-file-input").addEventListener("change", async (e) => {
+document.getElementById("chat-file-input").addEventListener("change", (e) => {
   const file = e.target.files[0];
-  e.target.value = ""; // cho phép chọn lại cùng 1 file lần sau nếu cần
   if (!file) return;
-
-  const session = getSession();
-  if (!session) return;
 
   const isVideo = file.type.startsWith("video/");
   const limitMb = isVideo ? MAX_VIDEO_MB : MAX_IMAGE_MB;
   if (file.size > limitMb * 1024 * 1024) {
     alert(`File vượt quá giới hạn ${limitMb}MB cho ${isVideo ? "video" : "ảnh"}.`);
+    e.target.value = "";
     return;
   }
 
-  const attachBtn = document.getElementById("chat-attach-btn");
-  attachBtn.disabled = true;
+  if (pendingAttachment) URL.revokeObjectURL(pendingAttachment.previewUrl);
+  const previewUrl = URL.createObjectURL(file);
+  pendingAttachment = { file, previewUrl };
+
+  if (isVideo) {
+    previewVideo.src = previewUrl;
+    previewVideo.classList.remove("hidden");
+    previewImg.classList.add("hidden");
+  } else {
+    previewImg.src = previewUrl;
+    previewImg.classList.remove("hidden");
+    previewVideo.classList.add("hidden");
+  }
+  previewFilename.textContent = file.name;
+  previewHint.textContent = "Xem lại trước khi gửi";
+  attachmentPreviewBar.classList.remove("hidden");
+});
+
+previewCancelBtn.addEventListener("click", () => {
+  clearPendingAttachment();
+});
+
+previewSendBtn.addEventListener("click", async () => {
+  if (!pendingAttachment) return;
+  const session = getSession();
+  if (!session) return;
+
+  previewSendBtn.disabled = true;
+  previewCancelBtn.disabled = true;
+  previewHint.textContent = "Đang gửi...";
   try {
     const formData = new FormData();
     formData.append("access_token", session.accessToken);
-    formData.append("file", file);
+    formData.append("file", pendingAttachment.file);
 
     const response = await fetch(`${API_BASE}/${session.ticketId}/attachments`, {
       method: "POST",
@@ -464,10 +529,13 @@ document.getElementById("chat-file-input").addEventListener("change", async (e) 
     }
     const state = await response.json();
     renderMessages(state);
+    clearPendingAttachment();
   } catch (err) {
     alert(err.message);
+    previewHint.textContent = "Xem lại trước khi gửi";
   } finally {
-    attachBtn.disabled = false;
+    previewSendBtn.disabled = false;
+    previewCancelBtn.disabled = false;
   }
 });
 

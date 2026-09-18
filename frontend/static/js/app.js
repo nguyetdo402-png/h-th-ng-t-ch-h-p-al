@@ -191,6 +191,148 @@ document.getElementById("agent-filter-clear-btn").addEventListener("click", () =
   loadTicketList();
 });
 
+// ---- Tổng quan số lượng ticket theo trạng thái (đầu trang danh sách) ----
+
+// Thứ tự hiển thị cố định các thẻ trạng thái (khớp với vòng đời ticket).
+const SUMMARY_STATUS_ORDER = ["new", "processing", "waiting", "closed"];
+
+// Mã màu hex tương ứng với các màu "status.*" khai báo trong tailwind.config
+// của index.html — SVG không đọc được class Tailwind nên cần lặp lại ở đây.
+const STATUS_HEX = {
+  new: "#3B6FE0",
+  processing: "#C08A1E",
+  waiting: "#8B5CF6",
+  closed: "#6B7280",
+};
+
+let summaryView = "numbers"; // "numbers" | "chart" — trạng thái tab đang chọn
+
+function setSummaryView(view) {
+  summaryView = view;
+  const numbersBtn = document.getElementById("summary-view-numbers-btn");
+  const chartBtn = document.getElementById("summary-view-chart-btn");
+  const numbersPane = document.getElementById("ticket-status-summary");
+  const chartPane = document.getElementById("ticket-status-chart-card");
+
+  const activeCls = "bg-ink text-white";
+  const inactiveCls = "text-subtle hover:text-ink";
+  numbersBtn.className = `px-3 py-1 rounded-full font-medium transition-colors ${view === "numbers" ? activeCls : inactiveCls}`;
+  chartBtn.className = `px-3 py-1 rounded-full font-medium transition-colors ${view === "chart" ? activeCls : inactiveCls}`;
+
+  numbersPane.classList.toggle("hidden", view !== "numbers");
+  chartPane.classList.toggle("hidden", view !== "chart");
+}
+
+document.getElementById("summary-view-numbers-btn").addEventListener("click", () => setSummaryView("numbers"));
+document.getElementById("summary-view-chart-btn").addEventListener("click", () => setSummaryView("chart"));
+
+/** Vẽ biểu đồ tròn SVG tỷ lệ % ticket theo trạng thái + chú thích màu bên cạnh. */
+function renderStatusPieChart(byStatus, total) {
+  const svg = document.getElementById("ticket-status-pie");
+  const legend = document.getElementById("ticket-status-legend");
+  const cx = 120, cy = 120, r = 100;
+
+  svg.innerHTML = "";
+  legend.innerHTML = "";
+
+  if (!total) {
+    svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#EAF6FF" />`;
+    legend.innerHTML = '<span class="text-subtle">Chưa có ticket nào.</span>';
+    return;
+  }
+
+  const polarToXY = (angleRad) => [cx + r * Math.cos(angleRad), cy + r * Math.sin(angleRad)];
+
+  let startAngle = -Math.PI / 2; // bắt đầu từ đỉnh 12 giờ, giống hình mẫu
+  for (const statusValue of SUMMARY_STATUS_ORDER) {
+    const count = byStatus[statusValue] ?? 0;
+    if (count === 0) continue;
+
+    const fraction = count / total;
+    const endAngle = startAngle + fraction * 2 * Math.PI;
+    const [x1, y1] = polarToXY(startAngle);
+    const [x2, y2] = polarToXY(endAngle);
+    const largeArc = fraction > 0.5 ? 1 : 0;
+    const color = STATUS_HEX[statusValue];
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute(
+      "d",
+      `M ${cx},${cy} L ${x1.toFixed(2)},${y1.toFixed(2)} A ${r},${r} 0 ${largeArc} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`
+    );
+    path.setAttribute("fill", color);
+    path.setAttribute("stroke", "white");
+    path.setAttribute("stroke-width", "2");
+    svg.appendChild(path);
+
+    // Nhãn % đặt ở giữa lát cắt, chỉ hiển thị nếu lát đủ lớn để không bị đè chữ.
+    if (fraction >= 0.04) {
+      const midAngle = (startAngle + endAngle) / 2;
+      const [lx, ly] = [cx + r * 0.62 * Math.cos(midAngle), cy + r * 0.62 * Math.sin(midAngle)];
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", lx.toFixed(2));
+      text.setAttribute("y", ly.toFixed(2));
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("dominant-baseline", "middle");
+      text.setAttribute("fill", "white");
+      text.setAttribute("font-size", "13");
+      text.setAttribute("font-weight", "600");
+      text.textContent = `${Math.round(fraction * 100)}%`;
+      svg.appendChild(text);
+    }
+
+    const legendItem = document.createElement("div");
+    legendItem.className = "flex items-center gap-2";
+    legendItem.innerHTML = `
+      <span class="inline-block w-2.5 h-2.5 rounded-full shrink-0" style="background:${color}"></span>
+      <span class="text-ink">${STATUS_META[statusValue].label}</span>
+      <span class="text-subtle">— ${count} (${Math.round(fraction * 100)}%)</span>
+    `;
+    legend.appendChild(legendItem);
+
+    startAngle = endAngle;
+  }
+}
+
+async function loadTicketStatusSummary() {
+  if (!isPrivileged) return; // chỉ admin/manager xem tổng quan này
+
+  const wrap = document.getElementById("ticket-summary-wrap");
+  wrap.classList.remove("hidden");
+  setSummaryView(summaryView);
+
+  const params = new URLSearchParams();
+  if (activeAgentId) params.set("assigned_to_agent_id", activeAgentId);
+
+  let overview;
+  try {
+    overview = await apiFetch(`/stats/overview?${params.toString()}`);
+  } catch (_) {
+    wrap.classList.add("hidden");
+    return;
+  }
+
+  const numbersContainer = document.getElementById("ticket-status-summary");
+  const makeCard = (label, value, dotClass) => `
+    <div class="bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] px-4 py-3">
+      <div class="flex items-center gap-1.5 text-xs text-subtle mb-1">
+        ${dotClass ? `<span class="inline-block w-1.5 h-1.5 rounded-full ${dotClass}"></span>` : ""}
+        <span>${label}</span>
+      </div>
+      <p class="font-display font-bold text-xl text-ink">${value}</p>
+    </div>
+  `;
+
+  let html = makeCard("Tổng số", overview.total_tickets, null);
+  for (const statusValue of SUMMARY_STATUS_ORDER) {
+    const meta = STATUS_META[statusValue];
+    html += makeCard(meta.label, overview.by_status[statusValue] ?? 0, meta.dot);
+  }
+  numbersContainer.innerHTML = html;
+
+  renderStatusPieChart(overview.by_status, overview.total_tickets);
+}
+
 // ---- Banner "Cần xử lý ưu tiên" (đầu trang danh sách) ----
 
 async function loadPriorityQueue() {
@@ -247,6 +389,7 @@ async function loadPriorityQueue() {
 async function loadTicketList() {
   renderFilters();
   loadPriorityQueue();
+  loadTicketStatusSummary();
 
   const tbody = document.getElementById("ticket-table-body");
   const emptyState = document.getElementById("empty-state");

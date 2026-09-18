@@ -5,7 +5,7 @@ uvicorn[standard]==0.32.0
 # --- Database (SQLAlchemy ORM, dễ chuyển sang PostgreSQL sau này) ---
 sqlalchemy==2.0.36
 alembic==1.13.3
-psycopg2-binary==2.9.10  
+# psycopg2-binary==2.9.10   # <-- bỏ comment khi nâng cấp lên PostgreSQL
 
 # --- Data Validation / Settings ---
 pydantic==2.9.2

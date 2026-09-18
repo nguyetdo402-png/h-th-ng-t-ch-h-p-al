@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.interaction_history import InteractionHistory, SenderType
+from app.models.ticket import TicketStatus
 from app.schemas.interaction_history import InteractionCreate, InteractionUpdate
 from app.services.ticket_service import get_ticket_or_404
 
@@ -126,6 +127,62 @@ def delete_interaction_by_customer(
         )
     )
     db.commit()
+
+
+def create_message_by_customer(
+    db: Session, ticket_id: int, customer_id: int, payload: InteractionCreate
+) -> InteractionHistory:
+    """
+    Khách hàng ĐÃ ĐĂNG NHẬP (customer-auth) gửi thêm 1 tin nhắn vào ticket của
+    chính mình — dùng cho trang "Tài khoản của tôi", KHÔNG phụ thuộc vào phiên
+    chat ẩn danh lưu ở localStorage của widget (vốn dễ mất khi khách đóng
+    tab/trình duyệt, đặc biệt khi widget được nhúng iframe ở website khác).
+    Đây là lối đi thay thế để khách vẫn nhắn lại được ngay cả khi đã mất phiên
+    chat cũ, miễn là còn nhớ email/mật khẩu tài khoản.
+
+    Nếu ticket đang ở trạng thái "closed", TỰ ĐỘNG mở lại (chuyển về "new")
+    thay vì tạo ticket mới — khác với luồng chat công khai ẩn danh (tạo ticket
+    mới khi ticket cũ đã đóng) vì ở đây khách đã CHỦ ĐỘNG chọn đúng ticket này
+    để nhắn tiếp, nên ưu tiên giữ liền mạch lịch sử hội thoại thay vì tách ra
+    ticket mới.
+    """
+    ticket = get_ticket_or_404(db, ticket_id)
+    if ticket.customer_id != customer_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy ticket id={ticket_id}",
+        )
+
+    if ticket.status == TicketStatus.CLOSED:
+        ticket.status = TicketStatus.NEW
+        db.add(
+            InteractionHistory(
+                ticket_id=ticket_id,
+                sender_type=SenderType.SYSTEM,
+                content=(
+                    "Khách hàng đã nhắn tin trở lại sau khi ticket được đóng — "
+                    "ticket được tự động mở lại (trạng thái 'Mới') để admin phân công xử lý."
+                ),
+            )
+        )
+    else:
+        db.add(
+            InteractionHistory(
+                ticket_id=ticket_id,
+                sender_type=SenderType.SYSTEM,
+                content="Khách hàng vừa gửi thêm tin nhắn mới trong hội thoại này.",
+            )
+        )
+
+    interaction = InteractionHistory(
+        ticket_id=ticket_id,
+        sender_type=SenderType.CUSTOMER,
+        content=payload.content,
+    )
+    db.add(interaction)
+    db.commit()
+    db.refresh(interaction)
+    return interaction
 
 
 def update_interaction(

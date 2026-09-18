@@ -64,6 +64,30 @@
         </button>
       </div>
 
+      <!-- ---- TỔNG QUAN: số lượng ticket theo trạng thái (chỉ admin/manager) ---- -->
+      <div id="ticket-summary-wrap" class="hidden mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-ink">Tổng quan ticket theo trạng thái</h2>
+          <div class="flex gap-1 bg-white border border-line rounded-full p-0.5 text-xs">
+            <button id="summary-view-numbers-btn" type="button"
+              class="px-3 py-1 rounded-full font-medium transition-colors">Số liệu</button>
+            <button id="summary-view-chart-btn" type="button"
+              class="px-3 py-1 rounded-full font-medium transition-colors">Biểu đồ</button>
+          </div>
+        </div>
+
+        <!-- Dạng số -->
+        <div id="ticket-status-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"></div>
+
+        <!-- Dạng biểu đồ tròn -->
+        <div id="ticket-status-chart-card" class="hidden bg-white border border-line rounded-2xl shadow-[0_16px_36px_-28px_rgba(47,127,189,0.35)] p-5">
+          <div class="flex flex-col sm:flex-row items-center gap-6">
+            <svg id="ticket-status-pie" viewBox="0 0 240 240" class="w-56 h-56 shrink-0"></svg>
+            <div id="ticket-status-legend" class="flex flex-col gap-2 text-sm"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- ---- BANNER: Cần xử lý ưu tiên (AI/nhân viên đánh giá) ---- -->
       <div id="priority-queue-banner" class="hidden mb-6">
         <div class="flex items-center gap-2 mb-3">
